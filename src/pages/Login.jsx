@@ -39,7 +39,7 @@ export default function Login() {
       const networkErr = err?.code === 'ERR_NETWORK' || err?.message === 'Network Error';
       setError(
         networkErr
-          ? 'Cannot reach the backend. Make sure it is running on port 5000.'
+          ? `Cannot reach the backend server (${import.meta.env.VITE_API_URL || 'http://localhost:5000'}). If deployed, ensure VITE_API_URL is set in Vercel environment variables.`
           : backendMsg || err?.message || 'Login failed. Please try again.'
       );
     } finally {
@@ -58,7 +58,7 @@ export default function Login() {
       const networkErr = err?.code === 'ERR_NETWORK' || err?.message === 'Network Error';
       setError(
         networkErr
-          ? 'Cannot reach the backend. Make sure it is running on port 5000.'
+          ? `Cannot reach the backend server (${import.meta.env.VITE_API_URL || 'http://localhost:5000'}). If deployed, ensure VITE_API_URL is set in Vercel environment variables.`
           : backendMsg || err?.message || 'Google login failed.'
       );
     } finally {
@@ -69,8 +69,8 @@ export default function Login() {
   const handleGoogleError = () => {
     setError(
       CLIENT_ID
-        ? 'Google sign-in was cancelled or blocked. Check that http://localhost:5173 is an Authorized JavaScript Origin in Google Cloud Console.'
-        : 'VITE_GOOGLE_CLIENT_ID is not set. Copy frontend/.env.example to frontend/.env and add your Google Client ID.'
+        ? 'Google sign-in was cancelled or blocked. Make sure your site URL is added as an Authorized JavaScript Origin in Google Cloud Console.'
+        : 'VITE_GOOGLE_CLIENT_ID is not set. Add it to your Vercel environment variables.'
     );
   };
 
