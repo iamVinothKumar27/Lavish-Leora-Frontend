@@ -116,7 +116,7 @@ export default function Header() {
 
                   {dropdownOpen && (
                     <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-hover border border-gray-100 py-1 z-50">
-                      {user.email === 'santhoshmass54@gmail.com' && (
+                      {user.role === 'admin' && (
                         <Link
                           to="/admin"
                           onClick={() => setDropdownOpen(false)}
@@ -206,7 +206,7 @@ export default function Header() {
                     )}
                     <span className="text-sm font-semibold text-gray-800">{user.name}</span>
                   </div>
-                  {user.email === 'santhoshmass54@gmail.com' && (
+                  {user.role === 'admin' && (
                     <Link
                       to="/admin"
                       onClick={() => setMenuOpen(false)}

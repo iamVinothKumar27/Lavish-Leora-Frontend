@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 
 const LOGIN_BG = 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1200&q=80';
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const ADMIN_EMAIL = 'santhoshmass54@gmail.com';
 
 export default function Login() {
   const { user, loginWithGoogle, loginWithPassword } = useAuth();
@@ -19,12 +18,12 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate(user.email === ADMIN_EMAIL ? '/admin' : '/', { replace: true });
+      navigate(user.role === 'admin' ? '/admin' : '/', { replace: true });
     }
   }, [user, navigate]);
 
   const redirectAfterLogin = (loggedUser) => {
-    navigate(loggedUser.email === ADMIN_EMAIL ? '/admin' : '/', { replace: true });
+    navigate(loggedUser.role === 'admin' ? '/admin' : '/', { replace: true });
   };
 
   const handleEmailLogin = async (e) => {

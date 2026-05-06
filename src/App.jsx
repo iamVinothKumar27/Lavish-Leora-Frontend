@@ -22,7 +22,6 @@ import AdminEditProduct from './admin/pages/AdminEditProduct';
 import AdminOrders from './admin/pages/AdminOrders';
 import AdminContacts from './admin/pages/AdminContacts';
 
-const ADMIN_EMAIL = 'santhoshmass54@gmail.com';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 function AdminRoute({ children }) {
@@ -41,7 +40,7 @@ function AdminRoute({ children }) {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  if (user.email !== ADMIN_EMAIL) {
+  if (user.role !== 'admin') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-cream">
         <div className="text-center p-10 bg-white rounded-2xl shadow-soft max-w-md">
