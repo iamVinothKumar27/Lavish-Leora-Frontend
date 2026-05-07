@@ -6,7 +6,6 @@ const FALLBACK_IMG = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c7
 export default function ProductCard({ product }) {
   const { _id, name, price, category, images, newArrival, featured, subcategory, colors } = product;
   const img = resolveImageUrl(images?.[0]) || FALLBACK_IMG;
-  console.log('[ProductCard] image src:', img);
 
   return (
     <Link

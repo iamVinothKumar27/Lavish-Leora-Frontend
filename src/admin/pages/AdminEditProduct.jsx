@@ -15,6 +15,7 @@ export default function AdminEditProduct() {
   const [categories, setCategories] = useState([]);
   const [colorInput, setColorInput] = useState('');
   const [urlInputs, setUrlInputs] = useState([]);
+  const [existingGridFS, setExistingGridFS] = useState([]); // { fileId, filename, contentType }
   const [imageFiles, setImageFiles] = useState([]);
   const [filePreviews, setFilePreviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +43,10 @@ export default function AdminEditProduct() {
           newArrival: p.newArrival || false,
           koreanStyle: p.koreanStyle || false,
         });
-        setUrlInputs(p.images?.length ? p.images : ['']);
+        const strings = (p.images || []).filter((img) => typeof img === 'string');
+        const gridfs = (p.images || []).filter((img) => img && typeof img === 'object' && img.fileId);
+        setUrlInputs(strings.length ? strings : ['']);
+        setExistingGridFS(gridfs);
         setCategories(catRes.data);
       })
       .catch(() => setError('Failed to load product'))
@@ -101,7 +105,7 @@ export default function AdminEditProduct() {
     setSuccess('');
 
     const validUrls = urlInputs.filter((u) => u.trim() !== '');
-    if (validUrls.length === 0 && imageFiles.length === 0) {
+    if (validUrls.length === 0 && existingGridFS.length === 0 && imageFiles.length === 0) {
       setError('Please add at least one image URL or upload an image file.');
       return;
     }
@@ -121,7 +125,8 @@ export default function AdminEditProduct() {
       form.sizes.forEach((s) => fd.append('sizes', s));
       form.colors.forEach((c) => fd.append('colors', c));
       validUrls.forEach((u) => fd.append('imageUrls', u));
-      imageFiles.forEach((f) => fd.append('imageFiles', f));
+      fd.append('retainedImages', JSON.stringify(existingGridFS));
+      imageFiles.forEach((f) => fd.append('images', f));
 
       await api.put(`/api/products/${id}`, fd);
       setSuccess('Product updated successfully!');
@@ -256,6 +261,32 @@ export default function AdminEditProduct() {
         {/* Images */}
         <div className="bg-white rounded-2xl shadow-card p-6">
           <h2 className="font-semibold text-gray-800 border-b border-gray-100 pb-3 mb-4">Product Images</h2>
+
+          {existingGridFS.length > 0 && (
+            <div className="mb-5">
+              <p className="text-sm font-medium text-gray-700 mb-2">Stored Images (MongoDB)</p>
+              <p className="text-xs text-gray-400 mb-3">Click × to remove an image. Removed images are deleted from storage on save.</p>
+              <div className="flex flex-wrap gap-3">
+                {existingGridFS.map((img) => (
+                  <div key={img.fileId} className="relative group">
+                    <img
+                      src={resolveImageUrl(img)}
+                      alt={img.filename}
+                      className="w-20 h-20 object-cover rounded-xl border border-gray-200"
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setExistingGridFS((prev) => prev.filter((x) => x.fileId !== img.fileId))}
+                      className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mb-5">
             <div className="flex items-center justify-between mb-2">

@@ -105,7 +105,7 @@ export default function AdminAddProduct() {
       form.sizes.forEach((s) => fd.append('sizes', s));
       form.colors.forEach((c) => fd.append('colors', c));
       validUrls.forEach((u) => fd.append('imageUrls', u));
-      imageFiles.forEach((f) => fd.append('imageFiles', f));
+      imageFiles.forEach((f) => fd.append('images', f));
 
       await api.post('/api/products', fd);
       setSuccess('Product added successfully!');
