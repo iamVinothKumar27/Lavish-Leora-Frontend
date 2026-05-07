@@ -21,6 +21,7 @@ import AdminAddProduct from './admin/pages/AdminAddProduct';
 import AdminEditProduct from './admin/pages/AdminEditProduct';
 import AdminOrders from './admin/pages/AdminOrders';
 import AdminContacts from './admin/pages/AdminContacts';
+import AdminCategories from './admin/pages/AdminCategories';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -90,6 +91,7 @@ export default function App() {
                 <Route path="products" element={<AdminProducts />} />
                 <Route path="products/add" element={<AdminAddProduct />} />
                 <Route path="products/edit/:id" element={<AdminEditProduct />} />
+                <Route path="categories" element={<AdminCategories />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="contacts" element={<AdminContacts />} />
               </Route>

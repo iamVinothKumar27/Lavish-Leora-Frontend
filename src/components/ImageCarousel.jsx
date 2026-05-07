@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 const FALLBACK = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80';
 
 export default function ImageCarousel({ images = [] }) {
-  const imgs = images.length ? images : [FALLBACK];
+  const rawImgs = images.length ? images : [FALLBACK];
+  const imgs = rawImgs.map((u) => resolveImageUrl(u) || FALLBACK);
   const [active, setActive] = useState(0);
 
   const prev = () => setActive((a) => (a - 1 + imgs.length) % imgs.length);

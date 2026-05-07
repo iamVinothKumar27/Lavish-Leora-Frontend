@@ -1,17 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
 
 const SIZES_MEN = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
 const SIZES_WOMEN = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
-const SUBCATS = {
-  Men: ['Shirts', 'T-Shirts', 'Jeans', 'Pants', 'Ethnic Wear', 'Co-ords'],
-  Women: ['Kurtis', 'Co-ords', 'Korean Dresses', 'Tops', 'Western Dresses', 'Sarees', 'Gowns', 'Lehengas', 'Skirts'],
-};
 
 const INITIAL = {
-  name: '', description: '', price: '', category: 'Women', subcategory: '',
-  stock: '', sizes: [], featured: false, newArrival: false, koreanStyle: false,
+  name: '', description: '', price: '', category: '', subcategory: '',
+  stock: '', sizes: [], colors: [], featured: false, newArrival: false, koreanStyle: false,
 };
 
 export default function AdminAddProduct() {
@@ -19,12 +15,27 @@ export default function AdminAddProduct() {
   const fileInputRef = useRef(null);
 
   const [form, setForm] = useState(INITIAL);
-  const [urlInputs, setUrlInputs] = useState(['']); // typed URL strings
-  const [imageFiles, setImageFiles] = useState([]);  // File objects
-  const [filePreviews, setFilePreviews] = useState([]); // object URLs for preview
+  const [categories, setCategories] = useState([]);
+  const [colorInput, setColorInput] = useState('');
+  const [urlInputs, setUrlInputs] = useState(['']);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [filePreviews, setFilePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    api.get('/api/categories').then((res) => {
+      setCategories(res.data);
+      if (res.data.length > 0) {
+        setForm((p) => ({ ...p, category: res.data[0].name }));
+      }
+    });
+  }, []);
+
+  const selectedCat = categories.find((c) => c.name === form.category);
+  const subcats = selectedCat?.subcategories || [];
+  const sizes = form.category === 'Men' ? SIZES_MEN : SIZES_WOMEN;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -38,7 +49,15 @@ export default function AdminAddProduct() {
     }));
   };
 
-  // URL inputs
+  const addColor = () => {
+    const v = colorInput.trim();
+    if (v && !form.colors.includes(v)) {
+      setForm((prev) => ({ ...prev, colors: [...prev.colors, v] }));
+    }
+    setColorInput('');
+  };
+  const removeColor = (c) => setForm((prev) => ({ ...prev, colors: prev.colors.filter((x) => x !== c) }));
+
   const handleUrlChange = (i, val) => {
     const updated = [...urlInputs];
     updated[i] = val;
@@ -47,7 +66,6 @@ export default function AdminAddProduct() {
   const addUrlField = () => setUrlInputs((prev) => [...prev, '']);
   const removeUrlField = (i) => setUrlInputs((prev) => prev.filter((_, idx) => idx !== i));
 
-  // File inputs
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     const previews = files.map((f) => URL.createObjectURL(f));
@@ -85,6 +103,7 @@ export default function AdminAddProduct() {
       fd.append('newArrival', form.newArrival);
       fd.append('koreanStyle', form.koreanStyle);
       form.sizes.forEach((s) => fd.append('sizes', s));
+      form.colors.forEach((c) => fd.append('colors', c));
       validUrls.forEach((u) => fd.append('imageUrls', u));
       imageFiles.forEach((f) => fd.append('imageFiles', f));
 
@@ -97,9 +116,6 @@ export default function AdminAddProduct() {
       setLoading(false);
     }
   };
-
-  const sizes = form.category === 'Men' ? SIZES_MEN : SIZES_WOMEN;
-  const subcats = SUBCATS[form.category] || [];
 
   return (
     <div className="max-w-3xl">
@@ -140,9 +156,14 @@ export default function AdminAddProduct() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1.5 block">Category *</label>
-              <select name="category" value={form.category} onChange={(e) => { handleChange(e); setForm((p) => ({ ...p, subcategory: '' })); }} required className="input-field">
-                <option value="Women">Women</option>
-                <option value="Men">Men</option>
+              <select
+                name="category"
+                value={form.category}
+                onChange={(e) => { handleChange(e); setForm((p) => ({ ...p, subcategory: '' })); }}
+                required
+                className="input-field"
+              >
+                {categories.map((c) => <option key={c._id} value={c.name}>{c.name}</option>)}
               </select>
             </div>
             <div>
@@ -153,6 +174,38 @@ export default function AdminAddProduct() {
               </select>
             </div>
           </div>
+        </div>
+
+        {/* Colors */}
+        <div className="bg-white rounded-2xl shadow-card p-6">
+          <h2 className="font-semibold text-gray-800 border-b border-gray-100 pb-3 mb-4">Available Colors</h2>
+          <div className="flex gap-2 mb-3">
+            <input
+              value={colorInput}
+              onChange={(e) => setColorInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addColor(); } }}
+              placeholder="e.g. Red, Navy Blue, Sage Green"
+              className="input-field flex-1"
+            />
+            <button
+              type="button"
+              onClick={addColor}
+              className="px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors whitespace-nowrap"
+            >
+              Add
+            </button>
+          </div>
+          {form.colors.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {form.colors.map((c) => (
+                <span key={c} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm">
+                  {c}
+                  <button type="button" onClick={() => removeColor(c)} className="text-gray-400 hover:text-red-500 transition-colors leading-none text-base">×</button>
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-gray-400">Press Enter or click Add. Click × to remove.</p>
         </div>
 
         {/* Sizes */}
@@ -178,7 +231,6 @@ export default function AdminAddProduct() {
         <div className="bg-white rounded-2xl shadow-card p-6">
           <h2 className="font-semibold text-gray-800 border-b border-gray-100 pb-3 mb-4">Product Images</h2>
 
-          {/* URL inputs */}
           <div className="mb-5">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-gray-700">Image URLs</p>
@@ -194,7 +246,7 @@ export default function AdminAddProduct() {
                     <input
                       value={url}
                       onChange={(e) => handleUrlChange(i, e.target.value)}
-                      placeholder={`https://images.unsplash.com/...`}
+                      placeholder="https://images.unsplash.com/..."
                       className="input-field text-xs"
                     />
                     {url.trim() && (
@@ -214,7 +266,6 @@ export default function AdminAddProduct() {
             </div>
           </div>
 
-          {/* File upload */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-gray-700">Upload Images</p>
@@ -227,14 +278,7 @@ export default function AdminAddProduct() {
               </button>
             </div>
             <p className="text-xs text-gray-400 mb-3">JPG, PNG, WEBP or GIF — max 5 MB each.</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
             {filePreviews.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {filePreviews.map((src, i) => (
@@ -244,7 +288,6 @@ export default function AdminAddProduct() {
                       type="button"
                       onClick={() => removeFile(i)}
                       className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Remove"
                     >
                       ×
                     </button>

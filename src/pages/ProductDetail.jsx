@@ -16,6 +16,7 @@ export default function ProductDetail() {
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
   const [cartState, setCartState] = useState('idle'); // 'idle' | 'loading' | 'added' | 'error'
   const [sizeError, setSizeError] = useState(false);
 
@@ -23,11 +24,13 @@ export default function ProductDetail() {
     setLoading(true);
     setCartState('idle');
     setSelectedSize('');
+    setSelectedColor('');
     setSizeError(false);
     api.get(`/api/products/${id}`)
       .then((res) => {
         setProduct(res.data);
         setSelectedSize(res.data.sizes?.[0] || '');
+        setSelectedColor(res.data.colors?.[0] || '');
         return api.get(`/api/products?category=${res.data.category}&limit=5`);
       })
       .then((res) => setRelated((res.data.products || []).filter((p) => p._id !== id).slice(0, 4)))
@@ -152,6 +155,31 @@ export default function ProductDetail() {
               {product.description}
             </p>
 
+            {/* Colors */}
+            {product.colors?.length > 0 && (
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-gray-700 mb-3">
+                  Color:{' '}
+                  {selectedColor && <span className="font-normal text-primary-600">{selectedColor}</span>}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setSelectedColor(c)}
+                      className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                        selectedColor === c
+                          ? 'border-primary-600 bg-primary-600 text-white shadow-md'
+                          : 'border-gray-200 text-gray-600 hover:border-primary-400'
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Sizes */}
             {product.sizes?.length > 0 && (
               <div className="mb-6">
@@ -206,7 +234,7 @@ export default function ProductDetail() {
               </button>
               <a
                 href={`https://wa.me/916369931994?text=${encodeURIComponent(
-                  `Hi! I'm interested in: ${product.name} (₹${product.price?.toLocaleString('en-IN')})${selectedSize ? ` — Size: ${selectedSize}` : ''}. Is it available?`
+                  `Hi! I'm interested in: ${product.name} (₹${product.price?.toLocaleString('en-IN')})${selectedColor ? ` — Color: ${selectedColor}` : ''}${selectedSize ? ` — Size: ${selectedSize}` : ''}. Is it available?`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"

@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80';
 
 export default function ProductCard({ product }) {
-  const { _id, name, price, category, images, newArrival, featured, subcategory } = product;
-  const img = images?.[0] || FALLBACK_IMG;
+  const { _id, name, price, category, images, newArrival, featured, subcategory, colors } = product;
+  const img = resolveImageUrl(images?.[0]) || FALLBACK_IMG;
+  console.log('[ProductCard] image src:', img);
 
   return (
     <Link
@@ -47,6 +49,16 @@ export default function ProductCard({ product }) {
             </h3>
           </div>
         </div>
+        {colors?.length > 0 && (
+          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+            {colors.slice(0, 5).map((c) => (
+              <span key={c} className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">{c}</span>
+            ))}
+            {colors.length > 5 && (
+              <span className="text-xs text-gray-400">+{colors.length - 5}</span>
+            )}
+          </div>
+        )}
         <div className="mt-3 flex items-center justify-between">
           <span className="font-serif text-xl font-bold text-gray-900">
             ₹{price?.toLocaleString('en-IN')}
