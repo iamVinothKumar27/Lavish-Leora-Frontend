@@ -127,7 +127,14 @@ export default function AdminEditProduct() {
       setSuccess('Product updated successfully!');
       setTimeout(() => navigate('/admin/products'), 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update product.');
+      console.error('[EditProduct] error:', err.response?.data || err.message);
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError('Request timed out — the backend may be waking up on Render. Please wait 30 seconds and try again.');
+      } else if (!err.response) {
+        setError(`Cannot reach backend (${import.meta.env.VITE_API_URL || 'http://localhost:5000'}). Check that VITE_API_URL is set correctly in Vercel.`);
+      } else {
+        setError(err.response.data?.message || `Server error ${err.response.status} — check Render logs.`);
+      }
     } finally {
       setSaving(false);
     }
