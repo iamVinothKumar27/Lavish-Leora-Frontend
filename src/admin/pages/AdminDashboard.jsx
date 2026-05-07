@@ -156,7 +156,7 @@ export default function AdminDashboard() {
         <div className="grid sm:grid-cols-3 gap-4 text-sm text-gray-500">
           <div>📍 230 Kongu Main Road, 1st Floor,<br />Near Old ESI Hospital, Tirupur – 641607</div>
           <div>📞 6369931994 (Main)<br />9363004914 / 8668046050</div>
-          <div>✉️ santhoshlavishleora@gmail.com</div>
+          <div>✉️ lavishleora@gmail.com</div>
         </div>
       </div>
     </div>

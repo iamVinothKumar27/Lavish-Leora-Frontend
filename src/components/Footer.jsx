@@ -9,9 +9,11 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-700 flex items-center justify-center">
-                <span className="text-white text-sm font-serif font-bold">LL</span>
-              </div>
+              <img
+                src="/roundedlogo.png"
+                alt="Lavish Leora"
+                className="w-10 h-10 rounded-full object-cover"
+              />
               <div>
                 <span className="font-serif text-xl font-semibold text-white block leading-none">Lavish Leora</span>
                 <span className="text-xs text-primary-400 tracking-widest">PREMIUM FASHION</span>
@@ -119,8 +121,8 @@ export default function Footer() {
               </div>
               <div className="flex gap-3 text-sm text-gray-400">
                 <span className="text-primary-400">✉️</span>
-                <a href="mailto:santhoshlavishleora@gmail.com" className="hover:text-primary-400 break-all">
-                  santhoshlavishleora@gmail.com
+                <a href="mailto:lavishleora@gmail.com" className="hover:text-primary-400 break-all">
+                  lavishleora@gmail.com
                 </a>
               </div>
               <a

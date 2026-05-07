@@ -141,8 +141,8 @@ export default function About() {
                 <span className="text-primary-500 text-lg mt-0.5 flex-shrink-0">✉️</span>
                 <div>
                   <p className="font-medium text-gray-700 mb-0.5">Email</p>
-                  <a href="mailto:santhoshlavishleora@gmail.com" className="text-sm text-primary-600 hover:underline">
-                    santhoshlavishleora@gmail.com
+                  <a href="mailto:lavishleora@gmail.com" className="text-sm text-primary-600 hover:underline">
+                    lavishleora@gmail.com
                   </a>
                 </div>
               </div>

@@ -16,7 +16,7 @@ const CONTACT_INFO = [
   {
     icon: '✉️',
     title: 'Email Us',
-    lines: ['santhoshlavishleora@gmail.com'],
+    lines: ['lavishleora@gmail.com'],
     isEmail: true,
   },
   {
@@ -219,7 +219,7 @@ export default function Contact() {
 
                   <p className="text-xs text-gray-400 text-center">
                     Your message will be saved and forwarded to{' '}
-                    <span className="text-primary-500">santhoshlavishleora@gmail.com</span>
+                    <span className="text-primary-500">lavishleora@gmail.com</span>
                   </p>
                 </form>
               )}

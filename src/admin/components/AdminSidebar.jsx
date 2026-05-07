@@ -23,9 +23,11 @@ export default function AdminSidebar({ open, onClose }) {
       {/* Brand */}
       <div className="p-5 border-b border-gray-800">
         <Link to="/" className="flex items-center gap-2.5 group" onClick={onClose}>
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-700 flex items-center justify-center shadow">
-            <span className="text-white text-sm font-serif font-bold">LL</span>
-          </div>
+          <img
+            src="/roundedlogo.png"
+            alt="Lavish Leora"
+            className="w-10 h-10 rounded-full object-cover"
+          />
           <div>
             <p className="font-serif text-base font-semibold leading-none">Lavish Leora</p>
             <p className="text-xs text-gray-400 tracking-widest mt-0.5">ADMIN PANEL</p>
