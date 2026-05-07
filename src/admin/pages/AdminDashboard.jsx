@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
+import { getProductImageUrl } from '../../utils/imageUrl';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ products: 0, orders: 0, messages: 0, users: 0 });
@@ -130,11 +131,12 @@ export default function AdminDashboard() {
                   className="flex items-center gap-3 group hover:bg-gray-50 p-2 rounded-xl transition-colors"
                 >
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-beige flex-shrink-0">
-                    {p.images?.[0] ? (
-                      <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-xl">👗</div>
-                    )}
+                    <img
+                      src={getProductImageUrl(p)}
+                      alt={p.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.src = '/fallback-product.png'; }}
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate group-hover:text-primary-700">{p.name}</p>

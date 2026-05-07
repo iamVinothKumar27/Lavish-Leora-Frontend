@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
-
-const FALLBACK = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=80&q=60';
+import { getProductImageUrl } from '../../utils/imageUrl';
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -102,10 +101,10 @@ export default function AdminProducts() {
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-beige flex-shrink-0">
                           <img
-                            src={p.images?.[0] || FALLBACK}
+                            src={getProductImageUrl(p)}
                             alt={p.name}
                             className="w-full h-full object-cover"
-                            onError={(e) => { e.target.src = FALLBACK; }}
+                            onError={(e) => { e.currentTarget.src = '/fallback-product.png'; }}
                           />
                         </div>
                         <div>
