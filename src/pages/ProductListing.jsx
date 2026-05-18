@@ -3,36 +3,67 @@ import { useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import api from '../utils/api';
 
+const ITEMS_PER_PAGE = 20;
+
 export default function ProductListing() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState('newest');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
 
   const category = searchParams.get('category') || '';
   const search = searchParams.get('search') || '';
-  const [sort, setSort] = useState('newest');
   const [searchInput, setSearchInput] = useState(search);
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({
+      limit: String(ITEMS_PER_PAGE),
+      page: String(currentPage),
+      sort,
+    });
     if (category) params.append('category', category);
     if (search) params.append('search', search);
     api.get(`/api/products?${params}`)
-      .then((res) => setProducts(res.data.products || []))
-      .catch(() => setProducts([]))
+      .then((res) => {
+        setProducts(res.data.products || []);
+        setTotalPages(res.data.totalPages || 1);
+        setTotalProducts(res.data.totalProducts || 0);
+        console.log('[ProductListing] total:', res.data.totalProducts, '| page:', currentPage, '| received:', (res.data.products || []).length);
+      })
+      .catch(() => {
+        setProducts([]);
+        setTotalPages(1);
+        setTotalProducts(0);
+      })
       .finally(() => setLoading(false));
-  }, [category, search]);
+  }, [category, search, sort, currentPage]);
 
-  const sorted = [...products].sort((a, b) => {
-    if (sort === 'price-asc') return a.price - b.price;
-    if (sort === 'price-desc') return b.price - a.price;
-    return new Date(b.createdAt) - new Date(a.createdAt);
-  });
+  const handleCategoryChange = (cat) => {
+    setSearchParams(cat ? { category: cat } : {});
+    setCurrentPage(1);
+  };
+
+  const handleSort = (s) => {
+    setSort(s);
+    setCurrentPage(1);
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
     setSearchParams(searchInput ? { search: searchInput } : {});
+    setCurrentPage(1);
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const start = Math.max(1, currentPage - 2);
+    const end = Math.min(totalPages, currentPage + 2);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
   };
 
   return (
@@ -66,7 +97,7 @@ export default function ProductListing() {
             {['', 'Men', 'Women'].map((cat) => (
               <button
                 key={cat}
-                onClick={() => setSearchParams(cat ? { category: cat } : {})}
+                onClick={() => handleCategoryChange(cat)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
                   category === cat
                     ? 'bg-primary-600 border-primary-600 text-white'
@@ -79,7 +110,7 @@ export default function ProductListing() {
           </div>
           <select
             value={sort}
-            onChange={(e) => setSort(e.target.value)}
+            onChange={(e) => handleSort(e.target.value)}
             className="input-field w-auto text-sm py-2"
           >
             <option value="newest">Newest</option>
@@ -89,7 +120,7 @@ export default function ProductListing() {
         </div>
 
         <p className="text-sm text-gray-400 mb-6">
-          {loading ? 'Loading...' : `${sorted.length} products found`}
+          {loading ? 'Loading...' : `${totalProducts} products found`}
         </p>
 
         {loading ? (
@@ -102,18 +133,56 @@ export default function ProductListing() {
               </div>
             ))}
           </div>
-        ) : sorted.length === 0 ? (
+        ) : products.length === 0 ? (
           <div className="py-24 text-center">
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="font-serif text-2xl text-gray-700 mb-2">No products found</h3>
             <p className="text-gray-400 mb-6">Try a different search or browse all categories.</p>
-            <button onClick={() => { setSearchInput(''); setSearchParams({}); }} className="btn-primary">
+            <button
+              onClick={() => { setSearchInput(''); setSearchParams({}); setCurrentPage(1); }}
+              className="btn-primary"
+            >
               Browse All Products
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
-            {sorted.map((p) => <ProductCard key={p._id} product={p} />)}
+            {products.map((p) => <ProductCard key={p._id} product={p} />)}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-10 flex-wrap">
+            <button
+              onClick={() => setCurrentPage((p) => p - 1)}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-full text-sm font-medium border border-gray-200 bg-white text-gray-600 hover:bg-primary-50 hover:text-primary-700 hover:border-primary-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ← Previous
+            </button>
+
+            {getPageNumbers().map((n) => (
+              <button
+                key={n}
+                onClick={() => setCurrentPage(n)}
+                className={`w-9 h-9 rounded-full text-sm font-medium transition-all ${
+                  n === currentPage
+                    ? 'bg-primary-600 text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:bg-primary-50 hover:text-primary-700 border border-gray-200'
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage((p) => p + 1)}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-full text-sm font-medium border border-gray-200 bg-white text-gray-600 hover:bg-primary-50 hover:text-primary-700 hover:border-primary-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next →
+            </button>
           </div>
         )}
       </div>
