@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { resolveImageUrl } from '../utils/imageUrl';
+import { downloadImage } from '../utils/download';
 
 const FALLBACK = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80';
 
-export default function ImageCarousel({ images = [] }) {
+export default function ImageCarousel({ images = [], allowDownload = false, productName = 'image' }) {
   const rawImgs = images.length ? images : [FALLBACK];
   const imgs = rawImgs.map((u) => resolveImageUrl(u) || FALLBACK);
   const [active, setActive] = useState(0);
@@ -21,6 +22,21 @@ export default function ImageCarousel({ images = [] }) {
           className="w-full h-full object-cover transition-opacity duration-300"
           onError={(e) => { e.target.src = FALLBACK; }}
         />
+
+        {/* Download button */}
+        {allowDownload && (
+          <button
+            onClick={() => downloadImage(imgs[active], productName)}
+            title="Download image"
+            className="absolute top-3 right-3 w-9 h-9 bg-white/90 hover:bg-white rounded-full shadow-soft flex items-center justify-center transition-all hover:scale-110 z-10"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-gray-600">
+              <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
+              <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
+            </svg>
+          </button>
+        )}
+
         {imgs.length > 1 && (
           <>
             <button

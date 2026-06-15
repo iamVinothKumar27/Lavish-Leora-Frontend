@@ -2,18 +2,15 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import api from '../utils/api';
+import { useActiveCategories } from '../hooks/useActiveCategories';
 
-// Korean / women's fashion hero & section images
 const HERO_IMG = 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1920&q=85';
 
 const KOREAN_IMG_1 = 'https://images.unsplash.com/photo-1617922001439-4a2e6562f328?auto=format&fit=crop&w=800&q=80';
 const KOREAN_IMG_2 = 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80';
 
-const WOMEN_IMAGES = [
-  'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1583744946564-b52ac1c389c8?auto=format&fit=crop&w=600&q=80',
-];
+const COLLECTION_KOREAN = 'https://images.unsplash.com/photo-1617922001439-4a2e6562f328?auto=format&fit=crop&w=800&q=80';
+const COLLECTION_ETHNIC = 'https://images.unsplash.com/photo-1583744946564-b52ac1c389c8?auto=format&fit=crop&w=800&q=80';
 
 const MEN_IMAGES = [
   'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?auto=format&fit=crop&w=600&q=80',
@@ -35,13 +32,19 @@ const MARQUEE_ITEMS = [
 const WHY_ITEMS = [
   { icon: '✦', title: 'Korean Style', desc: 'Curated Korean fashion trends brought to your doorstep.' },
   { icon: '♛', title: 'Premium Quality', desc: 'Every piece crafted with the finest materials for lasting elegance.' },
-  { icon: '◈', title: 'Unique Designs', desc: 'Exclusive designs you won\'t find anywhere else in Tirupur.' },
+  { icon: '◈', title: 'Unique Designs', desc: "Exclusive designs you won't find anywhere else in Tirupur." },
   { icon: '◯', title: 'WhatsApp Orders', desc: 'Order instantly via WhatsApp — simple, fast, and personal.' },
 ];
+
+const MEN_CARD_LABELS = ['Casual', 'Formal', 'Street'];
 
 export default function Home() {
   const [newArrivals, setNewArrivals] = useState([]);
   const [loading, setLoading] = useState(true);
+  const activeCategories = useActiveCategories();
+
+  const hasMen = activeCategories?.some((c) => c.toLowerCase() === 'men');
+  const hasWomen = activeCategories === null || activeCategories?.some((c) => c.toLowerCase() === 'women');
 
   useEffect(() => {
     api.get('/api/products?newArrival=true&limit=4')
@@ -77,9 +80,11 @@ export default function Home() {
               <Link to="/women" className="btn-primary text-base px-8 py-3.5">
                 Shop Women →
               </Link>
-              <Link to="/men" className="btn-outline border-white text-white hover:bg-white hover:text-gray-900 text-base px-8 py-3.5">
-                Shop Men
-              </Link>
+              {hasMen && (
+                <Link to="/men" className="btn-outline border-white text-white hover:bg-white hover:text-gray-900 text-base px-8 py-3.5">
+                  Shop Men
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -178,7 +183,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <Link to="/women" className="btn-gold">
+              <Link to="/products?category=Women&subcategory=Korean" className="btn-gold">
                 Explore Korean Dresses
               </Link>
             </div>
@@ -186,81 +191,90 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Women Collection ── */}
-      <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
-          <div>
-            <p className="text-primary-500 text-sm font-medium tracking-[0.25em] uppercase mb-1">For Her</p>
-            <h2 className="section-title mb-1">Women's Collection</h2>
-            <p className="text-gray-400 text-sm">Elegant pieces for every occasion</p>
+      {/* ── Shop by Category — Korean Dresses + Ethnic Wear ── */}
+      {hasWomen && (
+        <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+          <div className="text-center mb-10">
+            <p className="text-primary-500 text-sm font-medium tracking-[0.25em] uppercase mb-1">Shop by Category</p>
+            <h2 className="section-title mb-1">Women's Collections</h2>
+            <p className="text-gray-400 text-sm">Curated styles for every occasion</p>
           </div>
-          <Link to="/women" className="btn-outline text-sm py-2.5 px-6 self-start sm:self-auto">
-            View All Women →
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {WOMEN_IMAGES.map((img, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
             <Link
-              key={i}
-              to="/women"
+              to="/products?category=Women&subcategory=Korean"
               className="group relative overflow-hidden rounded-2xl aspect-[3/4] block shadow-card card-hover"
             >
               <img
-                src={img}
-                alt="Women's fashion"
+                src={COLLECTION_KOREAN}
+                alt="Korean Dresses"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                onError={(e) => { e.target.src = WOMEN_IMAGES[0]; }}
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
               <div className="absolute bottom-4 left-4 text-white">
-                <p className="font-serif text-lg font-semibold">
-                  {['Korean Dresses', 'Elegant Wear', 'Party Collection'][i]}
-                </p>
-                <p className="text-xs text-gray-300">Shop Now →</p>
+                <p className="font-serif text-xl font-bold">Korean Dresses</p>
+                <p className="text-xs text-gray-300 mt-0.5">Coords · Pants · Bamboo</p>
+                <p className="text-xs text-primary-300 mt-1 font-medium">Shop Now →</p>
               </div>
             </Link>
-          ))}
-        </div>
-      </section>
+            <Link
+              to="/products?category=Women&subcategory=Ethnic"
+              className="group relative overflow-hidden rounded-2xl aspect-[3/4] block shadow-card card-hover"
+            >
+              <img
+                src={COLLECTION_ETHNIC}
+                alt="Ethnic Wear"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
+              <div className="absolute bottom-4 left-4 text-white">
+                <p className="font-serif text-xl font-bold">Ethnic Wear</p>
+                <p className="text-xs text-gray-300 mt-0.5">Single · 2 PC · 3 PC Kurti</p>
+                <p className="text-xs text-primary-300 mt-1 font-medium">Shop Now →</p>
+              </div>
+            </Link>
+          </div>
+        </section>
+      )}
 
-      {/* ── Men Collection ── */}
-      <section className="py-8 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
-          <div>
-            <p className="text-primary-500 text-sm font-medium tracking-[0.25em] uppercase mb-1">For Him</p>
-            <h2 className="section-title mb-1">Men's Collection</h2>
-            <p className="text-gray-400 text-sm">Sharp styles for the modern man</p>
-          </div>
-          <Link to="/men" className="btn-outline text-sm py-2.5 px-6 self-start sm:self-auto">
-            View All Men →
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {MEN_IMAGES.map((img, i) => (
-            <Link
-              key={i}
-              to="/men"
-              className="group relative overflow-hidden rounded-2xl aspect-[3/4] block shadow-card card-hover"
-            >
-              <img
-                src={img}
-                alt="Men's fashion"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                onError={(e) => { e.target.src = MEN_IMAGES[0]; }}
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4 text-white">
-                <p className="font-serif text-lg font-semibold">
-                  {['Casual', 'Formal', 'Street'][i]}
-                </p>
-                <p className="text-xs text-gray-300">Shop Now →</p>
-              </div>
+      {/* ── Men's Collection — only when men products exist ── */}
+      {hasMen && (
+        <section className="py-8 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
+            <div>
+              <p className="text-primary-500 text-sm font-medium tracking-[0.25em] uppercase mb-1">For Him</p>
+              <h2 className="section-title mb-1">Men's Collection</h2>
+              <p className="text-gray-400 text-sm">Sharp styles for the modern man</p>
+            </div>
+            <Link to="/men" className="btn-outline text-sm py-2.5 px-6 self-start sm:self-auto">
+              View All Men →
             </Link>
-          ))}
-        </div>
-      </section>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {MEN_IMAGES.map((img, i) => (
+              <Link
+                key={i}
+                to="/men"
+                className="group relative overflow-hidden rounded-2xl aspect-[3/4] block shadow-card card-hover"
+              >
+                <img
+                  src={img}
+                  alt="Men's fashion"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => { e.target.src = MEN_IMAGES[0]; }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 text-white">
+                  <p className="font-serif text-lg font-semibold">{MEN_CARD_LABELS[i]}</p>
+                  <p className="text-xs text-gray-300">Shop Now →</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Why Choose Us ── */}
       <section className="bg-beige py-20 px-4 sm:px-6">

@@ -10,16 +10,26 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { addToCart } = useCart();
+  const { addToCart, items, updateQuantity, removeItem } = useCart();
 
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
-  const [cartState, setCartState] = useState('idle'); // 'idle' | 'loading' | 'added' | 'error'
+  const [cartState, setCartState] = useState('idle'); // 'idle' | 'loading' | 'error'
   const [sizeError, setSizeError] = useState(false);
+  const [qtyLoading, setQtyLoading] = useState(false);
 
+  // Cart item matching this product + currently selected size
+  const cartItem = items.find(
+    (item) => (item.product?.toString?.() ?? item.product) === id && item.size === selectedSize
+  );
+  const isInCart = !!cartItem;
+  const cartItemQty = cartItem?.quantity || 0;
+  const addedToCart = cartState === 'idle' && isInCart;
+
+  // Fetch product on id change
   useEffect(() => {
     setLoading(true);
     setCartState('idle');
@@ -29,7 +39,6 @@ export default function ProductDetail() {
     api.get(`/api/products/${id}`)
       .then((res) => {
         setProduct(res.data);
-        setSelectedSize(res.data.sizes?.[0] || '');
         setSelectedColor(res.data.colors?.[0] || '');
         return api.get(`/api/products?category=${res.data.category}&limit=5`);
       })
@@ -38,26 +47,42 @@ export default function ProductDetail() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Auto-restore size from cart when navigating back to this page
+  useEffect(() => {
+    if (!product || selectedSize) return;
+    const existing = items.find((item) => (item.product?.toString?.() ?? item.product) === id);
+    if (existing) setSelectedSize(existing.size);
+  }, [product, id, items]);
+
   const handleAddToCart = async () => {
     if (!user) {
       navigate('/login', { state: { from: `/products/${id}` } });
       return;
     }
-
     if (product.sizes?.length > 0 && !selectedSize) {
       setSizeError(true);
       return;
     }
     setSizeError(false);
-
     setCartState('loading');
     try {
       await addToCart(id, selectedSize, 1);
-      setCartState('added');
-      setTimeout(() => setCartState('idle'), 2500);
+      setCartState('idle');
     } catch {
       setCartState('error');
       setTimeout(() => setCartState('idle'), 2500);
+    }
+  };
+
+  const handleCartQtyChange = async (delta) => {
+    if (qtyLoading) return;
+    setQtyLoading(true);
+    try {
+      const newQty = cartItemQty + delta;
+      if (newQty <= 0) await removeItem(id, selectedSize);
+      else await updateQuantity(id, selectedSize, newQty);
+    } catch {} finally {
+      setQtyLoading(false);
     }
   };
 
@@ -90,21 +115,20 @@ export default function ProductDetail() {
     );
   }
 
-  const cartBtnText = {
-    idle: product.stock === 0 ? 'Out of Stock' : 'Add to Cart',
-    loading: 'Adding...',
-    added: '✓ Added to Cart',
-    error: 'Failed — Try Again',
-  }[cartState];
+  const cartBtnText =
+    product.stock === 0 ? 'Out of Stock'
+    : cartState === 'loading' ? 'Adding...'
+    : cartState === 'error' ? 'Failed — Try Again'
+    : 'Add to Cart';
 
-  const cartBtnClass = {
-    idle: product.stock === 0
+  const cartBtnClass =
+    product.stock === 0
       ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-      : 'bg-primary-600 hover:bg-primary-700 text-white shadow-md hover:shadow-hover hover:-translate-y-0.5',
-    loading: 'bg-primary-400 text-white cursor-wait',
-    added: 'bg-green-500 text-white',
-    error: 'bg-red-500 text-white',
-  }[cartState];
+    : cartState === 'loading'
+      ? 'bg-primary-400 text-white cursor-wait'
+    : cartState === 'error'
+      ? 'bg-red-500 text-white'
+    : 'bg-primary-600 hover:bg-primary-700 text-white shadow-md hover:shadow-hover hover:-translate-y-0.5';
 
   return (
     <div className="pt-16 md:pt-20">
@@ -126,14 +150,16 @@ export default function ProductDetail() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
           {/* Images */}
-          <ImageCarousel images={product.images} />
+          <ImageCarousel images={product.images} allowDownload productName={product.name} />
 
           {/* Details */}
           <div className="flex flex-col">
             {/* Category + badges */}
             <div className="flex items-center gap-2 mb-3 flex-wrap">
               <span className="text-xs text-primary-500 font-medium tracking-wide uppercase">
-                {product.category} {product.subcategory ? `· ${product.subcategory}` : ''}
+                {product.category}{product.subcategory ? ` · ${product.subcategory}` : ''}
+                {product.subCategory ? ` · ${product.subCategory}` : ''}
+                {product.childCategory ? ` · ${product.childCategory}` : ''}
               </span>
               {product.newArrival && (
                 <span className="tag bg-primary-100 text-primary-700">New Arrival</span>
@@ -216,7 +242,7 @@ export default function ProductDetail() {
               </span>
             </div>
 
-            {/* Login prompt if not signed in */}
+            {/* Login prompt */}
             {!user && (
               <div className="mb-4 bg-primary-50 border border-primary-200 rounded-xl px-4 py-3 text-sm text-primary-700">
                 <Link to="/login" className="font-semibold underline">Sign in</Link> to add products to your cart.
@@ -225,16 +251,39 @@ export default function ProductDetail() {
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 mt-auto">
-              <button
-                onClick={handleAddToCart}
-                disabled={product.stock === 0 || cartState === 'loading'}
-                className={`flex-1 py-4 rounded-full font-semibold text-base transition-all ${cartBtnClass}`}
-              >
-                {cartBtnText}
-              </button>
+              {addedToCart ? (
+                <div className="flex-1 flex items-center justify-between bg-green-50 border-2 border-green-400 rounded-full px-5 py-2">
+                  <span className="text-green-700 font-semibold text-sm">✓ In Cart</span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleCartQtyChange(-1)}
+                      disabled={qtyLoading}
+                      className="w-9 h-9 rounded-full border-2 border-green-400 text-green-700 font-bold text-lg flex items-center justify-center hover:bg-green-100 transition-all disabled:opacity-50"
+                    >
+                      −
+                    </button>
+                    <span className="w-8 text-center font-bold text-green-800 text-base">{cartItemQty}</span>
+                    <button
+                      onClick={() => handleCartQtyChange(+1)}
+                      disabled={qtyLoading}
+                      className="w-9 h-9 rounded-full border-2 border-green-400 text-green-700 font-bold text-lg flex items-center justify-center hover:bg-green-100 transition-all disabled:opacity-50"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  disabled={product.stock === 0 || cartState === 'loading'}
+                  className={`flex-1 py-4 rounded-full font-semibold text-base transition-all ${cartBtnClass}`}
+                >
+                  {cartBtnText}
+                </button>
+              )}
               <a
                 href={`https://wa.me/916369931994?text=${encodeURIComponent(
-                  `Hi! I'm interested in: ${product.name} (₹${product.price?.toLocaleString('en-IN')})${selectedColor ? ` — Color: ${selectedColor}` : ''}${selectedSize ? ` — Size: ${selectedSize}` : ''}. Is it available?`
+                  `Hi! I'm interested in: ${product.name} (Rs.${product.price?.toLocaleString('en-IN')})${selectedColor ? ` — Color: ${selectedColor}` : ''}${selectedSize ? ` — Size: ${selectedSize}` : ''}. Is it available?`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -245,7 +294,7 @@ export default function ProductDetail() {
             </div>
 
             {/* Cart link after adding */}
-            {cartState === 'added' && (
+            {addedToCart && (
               <Link to="/cart" className="mt-3 text-center text-sm text-primary-600 hover:underline font-medium">
                 View Cart →
               </Link>

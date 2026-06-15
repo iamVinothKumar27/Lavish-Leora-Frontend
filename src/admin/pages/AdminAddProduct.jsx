@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
+import CategorySelector from '../components/CategorySelector';
 
 const SIZES_MEN = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
 const SIZES_WOMEN = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
 
 const INITIAL = {
-  name: '', description: '', price: '', category: '', subcategory: '',
+  name: '', description: '', price: '',
+  category: '', subcategory: '', subCategory: [], childCategory: [],
   stock: '', sizes: [], colors: [], featured: false, newArrival: false, koreanStyle: false,
 };
 
@@ -27,19 +29,18 @@ export default function AdminAddProduct() {
   useEffect(() => {
     api.get('/api/categories').then((res) => {
       setCategories(res.data);
-      if (res.data.length > 0) {
-        setForm((p) => ({ ...p, category: res.data[0].name }));
-      }
     });
   }, []);
 
-  const selectedCat = categories.find((c) => c.name === form.category);
-  const subcats = selectedCat?.subcategories || [];
   const sizes = form.category === 'Men' ? SIZES_MEN : SIZES_WOMEN;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleCategoryChange = (vals) => {
+    setForm((prev) => ({ ...prev, ...vals }));
   };
 
   const toggleSize = (sz) => {
@@ -98,6 +99,12 @@ export default function AdminAddProduct() {
       fd.append('price', form.price);
       fd.append('category', form.category);
       fd.append('subcategory', form.subcategory);
+      (Array.isArray(form.subCategory) ? form.subCategory : [form.subCategory])
+        .filter(Boolean)
+        .forEach((s) => fd.append('subCategory', s));
+      (Array.isArray(form.childCategory) ? form.childCategory : [form.childCategory])
+        .filter(Boolean)
+        .forEach((c) => fd.append('childCategory', c));
       fd.append('stock', form.stock);
       fd.append('featured', form.featured);
       fd.append('newArrival', form.newArrival);
@@ -160,26 +167,19 @@ export default function AdminAddProduct() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Category *</label>
-              <select
-                name="category"
-                value={form.category}
-                onChange={(e) => { handleChange(e); setForm((p) => ({ ...p, subcategory: '' })); }}
-                required
-                className="input-field"
-              >
-                {categories.map((c) => <option key={c._id} value={c.name}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Subcategory</label>
-              <select name="subcategory" value={form.subcategory} onChange={handleChange} className="input-field">
-                <option value="">Select subcategory</option>
-                {subcats.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
+          {/* Cascading category selector */}
+          <div>
+            <p className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-100 pb-2">Category *</p>
+            <CategorySelector
+              categories={categories}
+              values={{
+                category: form.category,
+                subcategory: form.subcategory,
+                subCategory: form.subCategory,
+                childCategory: form.childCategory,
+              }}
+              onChange={handleCategoryChange}
+            />
           </div>
         </div>
 

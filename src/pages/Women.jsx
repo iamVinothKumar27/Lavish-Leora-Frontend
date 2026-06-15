@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import ProductCard from '../components/ProductCard';
 import api from '../utils/api';
 
-const SUBCATEGORIES = ['All', 'Kurtis', 'Co-ords', 'Korean Dresses', 'Tops', 'Western Dresses', 'Sarees', 'Gowns', 'Lehengas', 'Skirts'];
+const SUBCATEGORIES = ['All', 'Korean', 'Ethnic'];
 const BANNER_IMG = 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=1920&q=80';
 const ITEMS_PER_PAGE = 20;
 

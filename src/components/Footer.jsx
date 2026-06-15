@@ -1,6 +1,40 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../utils/api';
+import { useActiveCategories } from '../hooks/useActiveCategories';
 
 export default function Footer() {
+  const activeCategories = useActiveCategories(); // ['Women','Men'] or null
+  const [allCategories, setAllCategories] = useState([]);
+
+  useEffect(() => {
+    api.get('/api/categories')
+      .then((r) => setAllCategories(r.data || []))
+      .catch(() => {});
+  }, []);
+
+  // Filter categories whose gender has products in DB
+  const visibleCategories = allCategories.filter((cat) =>
+    activeCategories?.some((ac) => ac.toLowerCase() === (cat.gender || '').toLowerCase())
+  );
+
+  // Show category name links (Korean, Ethnic, Inner Wears)
+  const categoryLinks = visibleCategories.map((cat) => ({
+    label: cat.name,
+    to: `/products?category=${encodeURIComponent(cat.gender)}&subcategory=${encodeURIComponent(cat.name)}`,
+  })).slice(0, 8);
+
+  // Quick links — Men only when men products exist
+  const hasMen = activeCategories?.some((c) => c.toLowerCase() === 'men');
+  const quickLinks = [
+    { to: '/', label: 'Home' },
+    ...(hasMen ? [{ to: '/men', label: 'Men Collection' }] : []),
+    { to: '/women', label: 'Women Collection' },
+    { to: '/cart', label: 'My Cart' },
+    { to: '/about', label: 'About Us' },
+    { to: '/contact', label: 'Contact' },
+  ];
+
   return (
     <footer className="bg-gray-900 text-gray-300">
       {/* Top section */}
@@ -58,15 +92,8 @@ export default function Footer() {
           <div>
             <h3 className="font-serif text-white font-semibold text-lg mb-4">Quick Links</h3>
             <ul className="space-y-2">
-              {[
-                { to: '/', label: 'Home' },
-                { to: '/men', label: 'Men Collection' },
-                { to: '/women', label: 'Women Collection' },
-                { to: '/cart', label: 'My Cart' },
-                { to: '/about', label: 'About Us' },
-                { to: '/contact', label: 'Contact' },
-              ].map(({ to, label }) => (
-                <li key={to}>
+              {quickLinks.map(({ to, label }) => (
+                <li key={to + label}>
                   <Link
                     to={to}
                     className="text-sm text-gray-400 hover:text-primary-400 transition-colors flex items-center gap-1.5"
@@ -78,29 +105,33 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Categories */}
+          {/* Categories — dynamic from backend */}
           <div>
             <h3 className="font-serif text-white font-semibold text-lg mb-4">Categories</h3>
-            <ul className="space-y-2">
-              {[
-                'Korean Dresses',
-                'Kurtis',
-                'Co-ords',
-                'Tops',
-                'Sarees',
-                'Gowns',
-                'Men\'s Shirts',
-              ].map((cat) => (
-                <li key={cat}>
-                  <Link
-                    to="/products"
-                    className="text-sm text-gray-400 hover:text-primary-400 transition-colors flex items-center gap-1.5"
-                  >
-                    <span className="text-primary-500">›</span> {cat}
+            {categoryLinks.length > 0 ? (
+              <ul className="space-y-2">
+                {categoryLinks.map(({ label, to }) => (
+                  <li key={label}>
+                    <Link
+                      to={to}
+                      className="text-sm text-gray-400 hover:text-primary-400 transition-colors flex items-center gap-1.5"
+                    >
+                      <span className="text-primary-500">›</span> {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : activeCategories === null ? (
+              <p className="text-xs text-gray-600">Loading…</p>
+            ) : (
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/women" className="text-sm text-gray-400 hover:text-primary-400 transition-colors flex items-center gap-1.5">
+                    <span className="text-primary-500">›</span> Women
                   </Link>
                 </li>
-              ))}
-            </ul>
+              </ul>
+            )}
           </div>
 
           {/* Contact Info */}

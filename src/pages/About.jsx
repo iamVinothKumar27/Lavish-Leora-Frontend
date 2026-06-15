@@ -1,21 +1,75 @@
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
-const ABOUT_IMG = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80';
-const STORE_IMG = 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=800&q=80';
+const ABOUT_IMAGES = ['/about/ab1.jpeg', '/about/ab2.jpeg'];
+const STORE_IMG = '/visit/vi.jpeg';
 
 const VALUES = [
   { icon: '✦', title: 'Quality First', desc: 'Every fabric, every stitch — we settle only for premium quality that lasts.' },
-  { icon: '♛', title: 'Korean Aesthetics', desc: 'Inspired by Seoul\'s vibrant fashion scene brought to Tirupur.' },
+  { icon: '♛', title: 'Korean Aesthetics', desc: "Inspired by Seoul's vibrant fashion scene brought to Tirupur." },
   { icon: '◈', title: 'Inclusive Fashion', desc: 'Fashion for everyone — modern silhouettes for all body types.' },
-  { icon: '⇄', title: 'Customer Care', desc: 'We\'re always here for you — before, during, and after your purchase.' },
+  { icon: '⇄', title: 'Customer Care', desc: "We're always here for you — before, during, and after your purchase." },
 ];
 
-const STATS = [
-  { value: '500+', label: 'Happy Customers' },
-  { value: '200+', label: 'Unique Styles' },
-  { value: '3+', label: 'Years of Trust' },
-  { value: '100%', label: 'Premium Quality' },
-];
+function AboutCarousel({ images }) {
+  const [current, setCurrent] = useState(0);
+  const timerRef = useRef(null);
+
+  const goTo = (idx) => setCurrent((idx + images.length) % images.length);
+  const prev = () => goTo(current - 1);
+  const next = () => goTo(current + 1);
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => goTo(current + 1), 3500);
+    return () => clearInterval(timerRef.current);
+  }, [current]);
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden w-full h-80 md:h-96 shadow-hover group">
+      {images.map((src, i) => (
+        <img
+          key={src}
+          src={src}
+          alt={`Lavish Leora — ${i + 1}`}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ${i === current ? 'opacity-100' : 'opacity-0'}`}
+        />
+      ))}
+
+      {/* Prev / Next */}
+      <button
+        onClick={prev}
+        aria-label="Previous"
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white rounded-full shadow flex items-center justify-center text-gray-700 text-lg font-bold transition-all opacity-0 group-hover:opacity-100"
+      >
+        ‹
+      </button>
+      <button
+        onClick={next}
+        aria-label="Next"
+        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/80 hover:bg-white rounded-full shadow flex items-center justify-center text-gray-700 text-lg font-bold transition-all opacity-0 group-hover:opacity-100"
+      >
+        ›
+      </button>
+
+      {/* Dots */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+        {images.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className={`rounded-full transition-all duration-300 ${i === current ? 'bg-white w-5 h-2' : 'bg-white/50 w-2 h-2'}`}
+          />
+        ))}
+      </div>
+
+      {/* Badge */}
+      <div className="absolute -bottom-5 -right-5 bg-primary-600 text-white p-5 rounded-2xl shadow-xl hidden md:block">
+        <p className="font-serif text-2xl font-bold">Korean Style</p>
+        <p className="text-primary-200 text-sm">Exclusive Collection</p>
+      </div>
+    </div>
+  );
+}
 
 export default function About() {
   return (
@@ -36,19 +90,7 @@ export default function About() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="bg-primary-700 text-white py-10">
-        <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {STATS.map(({ value, label }) => (
-            <div key={label}>
-              <p className="font-serif text-4xl font-bold text-gold-light">{value}</p>
-              <p className="text-primary-200 text-sm font-light mt-1">{label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Our Story */}
+      {/* Our Story — "Who We Are" with carousel */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
         <div className="grid md:grid-cols-2 gap-14 items-center">
           <div>
@@ -72,17 +114,10 @@ export default function About() {
               <Link to="/contact" className="btn-outline">Visit Our Store</Link>
             </div>
           </div>
-          <div className="relative">
-            <img
-              src={ABOUT_IMG}
-              alt="Lavish Leora fashion"
-              className="rounded-2xl w-full h-80 md:h-96 object-cover shadow-hover"
-              onError={(e) => { e.target.src = STORE_IMG; }}
-            />
-            <div className="absolute -bottom-5 -right-5 bg-primary-600 text-white p-5 rounded-2xl shadow-xl hidden md:block">
-              <p className="font-serif text-2xl font-bold">Korean Style</p>
-              <p className="text-primary-200 text-sm">Exclusive Collection</p>
-            </div>
+
+          {/* Image carousel */}
+          <div className="relative pb-6 md:pb-0">
+            <AboutCarousel images={ABOUT_IMAGES} />
           </div>
         </div>
       </section>
@@ -108,14 +143,14 @@ export default function About() {
         </div>
       </section>
 
-      {/* Store section */}
+      {/* Visit Our Store */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
         <div className="grid md:grid-cols-2 gap-14 items-center">
           <img
             src={STORE_IMG}
             alt="Lavish Leora store"
-            className="rounded-2xl w-full h-72 object-cover shadow-soft order-2 md:order-1"
-            onError={(e) => { e.target.src = ABOUT_IMG; }}
+            className="rounded-2xl w-full h-72 md:h-96 object-cover shadow-soft order-2 md:order-1"
+            onError={(e) => { e.target.src = ABOUT_IMAGES[0]; }}
           />
           <div className="order-1 md:order-2">
             <p className="text-primary-500 text-sm tracking-[0.25em] uppercase mb-3">Find Us</p>

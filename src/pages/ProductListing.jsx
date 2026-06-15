@@ -15,6 +15,9 @@ export default function ProductListing() {
   const [totalProducts, setTotalProducts] = useState(0);
 
   const category = searchParams.get('category') || '';
+  const subcategory = searchParams.get('subcategory') || '';
+  const subCategory = searchParams.get('subCategory') || '';
+  const childCategory = searchParams.get('childCategory') || '';
   const search = searchParams.get('search') || '';
   const [searchInput, setSearchInput] = useState(search);
 
@@ -26,13 +29,15 @@ export default function ProductListing() {
       sort,
     });
     if (category) params.append('category', category);
+    if (subcategory) params.append('subcategory', subcategory);
+    if (subCategory) params.append('subCategory', subCategory);
+    if (childCategory) params.append('childCategory', childCategory);
     if (search) params.append('search', search);
     api.get(`/api/products?${params}`)
       .then((res) => {
         setProducts(res.data.products || []);
         setTotalPages(res.data.totalPages || 1);
         setTotalProducts(res.data.totalProducts || 0);
-        console.log('[ProductListing] total:', res.data.totalProducts, '| page:', currentPage, '| received:', (res.data.products || []).length);
       })
       .catch(() => {
         setProducts([]);
@@ -40,7 +45,7 @@ export default function ProductListing() {
         setTotalProducts(0);
       })
       .finally(() => setLoading(false));
-  }, [category, search, sort, currentPage]);
+  }, [category, subcategory, subCategory, childCategory, search, sort, currentPage]);
 
   const handleCategoryChange = (cat) => {
     setSearchParams(cat ? { category: cat } : {});
@@ -66,15 +71,27 @@ export default function ProductListing() {
     return pages;
   };
 
+  // Build a human-readable page title
+  const pageTitle = childCategory || subCategory || subcategory
+    ? (childCategory || subCategory || subcategory)
+    : category
+    ? `${category}'s Collection`
+    : search
+    ? `Results for "${search}"`
+    : 'All Products';
+
+  const pageSubtitle = [category, subcategory, subCategory, childCategory].filter(Boolean).join(' › ');
+
   return (
     <div className="pt-16 md:pt-20">
       {/* Header */}
       <div className="bg-gradient-to-r from-primary-700 to-primary-900 text-white py-12 px-4">
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="font-serif text-4xl font-bold mb-2">
-            {category ? `${category}'s Collection` : search ? `Results for "${search}"` : 'All Products'}
-          </h1>
-          <p className="text-primary-200 font-light">Discover our premium fashion collection</p>
+          <h1 className="font-serif text-4xl font-bold mb-2">{pageTitle}</h1>
+          {pageSubtitle && pageSubtitle !== pageTitle && (
+            <p className="text-primary-300 text-sm mt-1">{pageSubtitle}</p>
+          )}
+          <p className="text-primary-200 font-light mt-1">Discover our premium fashion collection</p>
         </div>
       </div>
 
@@ -99,7 +116,7 @@ export default function ProductListing() {
                 key={cat}
                 onClick={() => handleCategoryChange(cat)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
-                  category === cat
+                  category === cat && !subcategory && !subCategory && !childCategory
                     ? 'bg-primary-600 border-primary-600 text-white'
                     : 'bg-white border-gray-200 text-gray-600 hover:border-primary-400'
                 }`}

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api';
 import { resolveImageUrl } from '../../utils/imageUrl';
+import { downloadImage } from '../../utils/download';
+import CategorySelector from '../components/CategorySelector';
 
 const SIZES_MEN = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
 const SIZES_WOMEN = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
@@ -15,7 +17,7 @@ export default function AdminEditProduct() {
   const [categories, setCategories] = useState([]);
   const [colorInput, setColorInput] = useState('');
   const [urlInputs, setUrlInputs] = useState([]);
-  const [existingGridFS, setExistingGridFS] = useState([]); // { fileId, filename, contentType }
+  const [existingGridFS, setExistingGridFS] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
   const [filePreviews, setFilePreviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +38,12 @@ export default function AdminEditProduct() {
           price: p.price ?? '',
           category: p.category || '',
           subcategory: p.subcategory || '',
+          subCategory: Array.isArray(p.subCategory)
+            ? p.subCategory
+            : (p.subCategory ? [p.subCategory] : []),
+          childCategory: Array.isArray(p.childCategory)
+            ? p.childCategory
+            : (p.childCategory ? [p.childCategory] : []),
           stock: p.stock ?? '',
           sizes: p.sizes || [],
           colors: p.colors || [],
@@ -53,13 +61,15 @@ export default function AdminEditProduct() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const selectedCat = categories.find((c) => c.name === form?.category);
-  const subcats = selectedCat?.subcategories || [];
   const sizes = form?.category === 'Men' ? SIZES_MEN : SIZES_WOMEN;
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleCategoryChange = (vals) => {
+    setForm((prev) => ({ ...prev, ...vals }));
   };
 
   const toggleSize = (sz) => {
@@ -118,6 +128,12 @@ export default function AdminEditProduct() {
       fd.append('price', form.price);
       fd.append('category', form.category);
       fd.append('subcategory', form.subcategory);
+      (Array.isArray(form.subCategory) ? form.subCategory : [form.subCategory])
+        .filter(Boolean)
+        .forEach((s) => fd.append('subCategory', s));
+      (Array.isArray(form.childCategory) ? form.childCategory : [form.childCategory])
+        .filter(Boolean)
+        .forEach((c) => fd.append('childCategory', c));
       fd.append('stock', form.stock);
       fd.append('featured', form.featured);
       fd.append('newArrival', form.newArrival);
@@ -180,33 +196,20 @@ export default function AdminEditProduct() {
               <input name="stock" type="number" value={form.stock} onChange={handleChange} min="0" className="input-field" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Category *</label>
-              <select
-                name="category"
-                value={form.category}
-                onChange={(e) => { handleChange(e); setForm((p) => ({ ...p, subcategory: '' })); }}
-                required
-                className="input-field"
-              >
-                {categories.map((c) => <option key={c._id} value={c.name}>{c.name}</option>)}
-                {/* Keep existing value if not in list */}
-                {form.category && !categories.find((c) => c.name === form.category) && (
-                  <option value={form.category}>{form.category}</option>
-                )}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Subcategory</label>
-              <select name="subcategory" value={form.subcategory} onChange={handleChange} className="input-field">
-                <option value="">Select subcategory</option>
-                {subcats.map((s) => <option key={s} value={s}>{s}</option>)}
-                {form.subcategory && !subcats.includes(form.subcategory) && (
-                  <option value={form.subcategory}>{form.subcategory}</option>
-                )}
-              </select>
-            </div>
+
+          {/* Cascading category selector */}
+          <div>
+            <p className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-100 pb-2">Category *</p>
+            <CategorySelector
+              categories={categories}
+              values={{
+                category: form.category,
+                subcategory: form.subcategory,
+                subCategory: form.subCategory,
+                childCategory: form.childCategory,
+              }}
+              onChange={handleCategoryChange}
+            />
           </div>
         </div>
 
@@ -275,12 +278,26 @@ export default function AdminEditProduct() {
                       className="w-20 h-20 object-cover rounded-xl border border-gray-200"
                       onError={(e) => { e.target.style.display = 'none'; }}
                     />
+                    {/* Remove button */}
                     <button
                       type="button"
                       onClick={() => setExistingGridFS((prev) => prev.filter((x) => x.fileId !== img.fileId))}
                       className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       ×
+                    </button>
+                    {/* Download button */}
+                    <button
+                      type="button"
+                      title="Download image"
+                      onClick={() => downloadImage(resolveImageUrl(img), form?.name || img.filename)}
+                      className="absolute bottom-0 left-0 right-0 h-7 bg-black/50 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity rounded-b-xl"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="white" className="w-3.5 h-3.5">
+                        <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
+                        <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
+                      </svg>
+                      <span className="text-white text-[10px] font-medium">Save</span>
                     </button>
                   </div>
                 ))}

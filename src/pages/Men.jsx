@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import ProductCard from '../components/ProductCard';
 import api from '../utils/api';
 
-const SUBCATEGORIES = ['All', 'Shirts', 'T-Shirts', 'Jeans', 'Pants', 'Ethnic Wear', 'Co-ords'];
+const SUBCATEGORIES = ['All', 'Inner Wears'];
 const BANNER_IMG = 'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?auto=format&fit=crop&w=1920&q=80';
 const ITEMS_PER_PAGE = 20;
 

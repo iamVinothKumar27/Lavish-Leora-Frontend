@@ -14,25 +14,25 @@ function buildWhatsAppMessage(items, user) {
     `📧 *Email:* ${user.email}`,
     '',
     '📦 *Items Ordered:*',
-    '──────────────────────────',
+    '--------------------------',
   ];
 
   items.forEach((item, i) => {
     const lineTotal = item.price * item.quantity;
-    lines.push(`${i + 1}. *${item.name}*`);
-    if (item.category) lines.push(`   📂 ${item.category}${item.subcategory ? ` › ${item.subcategory}` : ''}`);
+    lines.push(`${i + 1}. 👗 *${item.name}*`);
+    if (item.category) lines.push(`   Category: ${item.category}${item.subcategory ? ` > ${item.subcategory}` : ''}`);
     if (item.size) lines.push(`   📏 Size: ${item.size}`);
-    lines.push(`   🔢 Qty: ${item.quantity} × ₹${item.price.toLocaleString('en-IN')} = ₹${lineTotal.toLocaleString('en-IN')}`);
+    lines.push(`   🔢 Qty: ${item.quantity} x Rs.${item.price.toLocaleString('en-IN')} = Rs.${lineTotal.toLocaleString('en-IN')}`);
     lines.push('');
   });
 
   const total = items.reduce((s, item) => s + item.price * item.quantity, 0);
-  lines.push('──────────────────────────');
-  lines.push(`💰 *Grand Total: ₹${total.toLocaleString('en-IN')}*`);
+  lines.push('--------------------------');
+  lines.push(`💰 *Grand Total: Rs.${total.toLocaleString('en-IN')}*`);
   lines.push('');
   lines.push('📍 *Delivery Address:* (Please share your full address after this message)');
   lines.push('');
-  lines.push('Thank you for shopping at Lavish Leora! 🌸');
+  lines.push('Thank you for shopping at Lavish Leora!');
   lines.push('We will confirm availability and delivery details shortly.');
   return lines.join('\n');
 }

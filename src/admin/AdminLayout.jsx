@@ -23,9 +23,11 @@ export default function AdminLayout() {
             </div>
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-              <span className="text-white text-xs font-serif font-bold">LL</span>
-            </div>
+            <img
+              src="/roundedlogo.png"
+              alt="Lavish Leora"
+              className="w-7 h-7 rounded-full object-cover ring-2 ring-primary-100"
+            />
             <span className="font-serif text-base font-semibold text-gray-800">Admin Panel</span>
           </div>
           <div className="ml-auto">
