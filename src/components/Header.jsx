@@ -32,10 +32,12 @@ export default function Header() {
     navigate('/');
   };
 
+  const hasWomen = activeCategories === null || activeCategories?.some((c) => c.toLowerCase() === 'women');
+
   const navLinks = [
     { to: '/', label: 'Home' },
     ...(hasMen ? [{ to: '/men', label: 'Men' }] : []),
-    { to: '/women', label: 'Women' },
+    ...(hasWomen ? [{ to: '/women', label: 'Women' }] : []),
     { to: '/about', label: 'About' },
     { to: '/contact', label: 'Contact' },
   ];
@@ -101,17 +103,7 @@ export default function Header() {
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-primary-50 transition-colors"
                   >
-                    {user.picture ? (
-                      <img
-                        src={user.picture}
-                        alt={user.name}
-                        className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-200 shrink-0"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
-                        <span className="text-primary-700 text-sm font-semibold">{user.name[0]}</span>
-                      </div>
-                    )}
+                    <UserAvatar user={user} size={8} />
                     <span className="text-sm font-semibold text-gray-800">{user.name}</span>
                     <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -201,13 +193,7 @@ export default function Header() {
               {user ? (
                 <>
                   <div className="flex items-center gap-3 px-4 py-2">
-                    {user.picture ? (
-                      <img src={user.picture} alt="" className="w-8 h-8 rounded-full shrink-0" />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
-                        <span className="text-primary-700 text-sm font-semibold">{user.name[0]}</span>
-                      </div>
-                    )}
+                    <UserAvatar user={user} size={8} />
                     <span className="text-sm font-semibold text-gray-800">{user.name}</span>
                   </div>
                   {user.role === 'admin' && (
@@ -240,6 +226,28 @@ export default function Header() {
         </div>
       )}
     </header>
+  );
+}
+
+function UserAvatar({ user, size = 8 }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const cls = `w-${size} h-${size} rounded-full shrink-0`;
+
+  if (user.picture && !imgFailed) {
+    return (
+      <img
+        src={user.picture}
+        alt={user.name}
+        className={`${cls} object-cover ring-2 ring-primary-200`}
+        onError={() => setImgFailed(true)}
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+  return (
+    <div className={`${cls} bg-primary-100 flex items-center justify-center`}>
+      <span className="text-primary-700 text-sm font-semibold">{user.name?.[0]?.toUpperCase()}</span>
+    </div>
   );
 }
 

@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import FilterSidebar from '../components/FilterSidebar';
 import api from '../utils/api';
-import { useActiveCategories } from '../hooks/useActiveCategories';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -16,42 +15,41 @@ function Chip({ label, onRemove }) {
   );
 }
 
-export default function ProductListing() {
+// banner: { src, title, subtitle, tagline }
+export default function FilteredCategoryPage({ gender, fixedMainCat = null, banner }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [products, setProducts]         = useState([]);
-  const [loading, setLoading]           = useState(true);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
-  const [totalPages, setTotalPages]     = useState(1);
-  const [available, setAvailable]       = useState({});
-  const [drawerOpen, setDrawerOpen]     = useState(false);
-  const [searchInput, setSearchInput]   = useState('');
+  const [totalPages, setTotalPages] = useState(1);
+  const [available, setAvailable] = useState({});
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Active genders from backend (e.g. ['Women', 'Men'])
-  const activeCategories = useActiveCategories();
-  const genders = activeCategories || [];
+  // Read filter state from URL
+  const page        = parseInt(searchParams.get('page') || '1', 10);
+  const sort        = searchParams.get('sort') || 'newest';
+  const mainCat     = fixedMainCat || searchParams.get('mainCat') || '';
+  const subCats     = searchParams.getAll('subCat');
+  const childCats   = searchParams.getAll('childCat');
+  const minPrice    = searchParams.get('minPrice') || '';
+  const maxPrice    = searchParams.get('maxPrice') || '';
+  const sizes       = searchParams.getAll('size');
+  const colors      = searchParams.getAll('color');
 
-  // Read all filter state from URL
-  const page          = parseInt(searchParams.get('page') || '1', 10);
-  const sort          = searchParams.get('sort') || 'newest';
-  const gender        = searchParams.get('gender') || '';
-  const mainCat       = searchParams.get('mainCat') || '';
-  const subCategories = searchParams.getAll('subCat');
-  const childCats     = searchParams.getAll('childCat');
-  const minPrice      = searchParams.get('minPrice') || '';
-  const maxPrice      = searchParams.get('maxPrice') || '';
-  const sizes         = searchParams.getAll('size');
-  const colors        = searchParams.getAll('color');
-  const search        = searchParams.get('search') || '';
+  const filters = {
+    mainCat,
+    subCategories:  subCats,
+    childCategories: childCats,
+    minPrice,
+    maxPrice,
+    sizes,
+    colors,
+    sort,
+  };
 
-  const filters = { gender, mainCat, subCategories, childCategories: childCats, minPrice, maxPrice, sizes, colors, sort };
-
-  // Keep search box in sync with URL
-  useEffect(() => { setSearchInput(search); }, [search]);
-
-  // Fetch sidebar options whenever gender or mainCat changes
+  // Fetch available sidebar options whenever gender/mainCat changes
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (gender) params.append('gender', gender);
+    const params = new URLSearchParams({ gender });
     if (mainCat) params.append('subcategory', mainCat);
     api.get(`/api/categories/available?${params}`)
       .then((res) => setAvailable(res.data || {}))
@@ -61,16 +59,19 @@ export default function ProductListing() {
   // Fetch products whenever any filter changes
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ limit: String(ITEMS_PER_PAGE), page: String(page), sort });
-    if (gender)   params.append('category', gender);
-    if (mainCat)  params.append('subcategory', mainCat);
-    subCategories.forEach((sc) => params.append('subCategory', sc));
+    const params = new URLSearchParams({
+      category: gender,
+      limit:    String(ITEMS_PER_PAGE),
+      page:     String(page),
+      sort,
+    });
+    if (mainCat)   params.append('subcategory', mainCat);
+    subCats.forEach((sc) => params.append('subCategory', sc));
     childCats.forEach((cc) => params.append('childCategory', cc));
-    if (minPrice) params.append('minPrice', minPrice);
-    if (maxPrice) params.append('maxPrice', maxPrice);
+    if (minPrice)  params.append('minPrice', minPrice);
+    if (maxPrice)  params.append('maxPrice', maxPrice);
     sizes.forEach((sz) => params.append('size', sz));
     colors.forEach((col) => params.append('color', col));
-    if (search)   params.append('search', search);
 
     api.get(`/api/products?${params}`)
       .then((res) => {
@@ -81,19 +82,16 @@ export default function ProductListing() {
       .catch(() => { setProducts([]); setTotalProducts(0); setTotalPages(1); })
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gender, mainCat, subCategories.join(','), childCats.join(','), minPrice, maxPrice, sizes.join(','), colors.join(','), sort, search, page]);
+  }, [gender, mainCat, subCats.join(','), childCats.join(','), minPrice, maxPrice, sizes.join(','), colors.join(','), sort, page]);
 
+  // Update a filter key in the URL
   const setFilter = (key, value) => {
     const next = new URLSearchParams(searchParams);
-    next.delete('page');
+    next.delete('page'); // reset pagination on filter change
 
     switch (key) {
       case 'sort':
         if (value === 'newest') next.delete('sort'); else next.set('sort', value);
-        break;
-      case 'gender':
-        next.delete('gender'); next.delete('mainCat'); next.delete('subCat'); next.delete('childCat');
-        if (value) next.set('gender', value);
         break;
       case 'mainCat':
         next.delete('mainCat'); next.delete('subCat'); next.delete('childCat');
@@ -136,17 +134,9 @@ export default function ProductListing() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const next = new URLSearchParams();
-    if (searchInput.trim()) next.set('search', searchInput.trim());
-    setSearchParams(next);
-  };
-
   const activeFilterCount = [
-    gender ? 1 : 0,
-    mainCat ? 1 : 0,
-    subCategories.length,
+    !fixedMainCat && mainCat ? 1 : 0,
+    subCats.length,
     childCats.length,
     sizes.length,
     colors.length,
@@ -156,45 +146,27 @@ export default function ProductListing() {
 
   const pageNumbers = (() => {
     const nums = [];
-    for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) nums.push(i);
+    const start = Math.max(1, page - 2);
+    const end   = Math.min(totalPages, page + 2);
+    for (let i = start; i <= end; i++) nums.push(i);
     return nums;
   })();
-
-  const pageTitle = search
-    ? `Results for "${search}"`
-    : gender
-    ? `${gender}'s Collection`
-    : 'All Products';
 
   return (
     <div className="pt-16 md:pt-20">
       {/* Banner */}
-      <div className="bg-gradient-to-r from-primary-700 to-primary-900 text-white py-10 px-4">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="font-serif text-3xl md:text-4xl font-bold mb-3">{pageTitle}</h1>
-          {/* Search bar */}
-          <form onSubmit={handleSearch} className="flex gap-2 max-w-lg">
-            <input
-              type="text"
-              placeholder="Search dresses, styles..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="flex-1 px-4 py-2.5 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
-            />
-            <button type="submit" className="bg-white/20 hover:bg-white/30 border border-white/30 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all">
-              Search
-            </button>
-            {search && (
-              <button type="button" onClick={() => { setSearchInput(''); setSearchParams(new URLSearchParams()); }}
-                className="bg-white/10 hover:bg-white/20 text-white px-3 py-2.5 rounded-xl text-sm transition-all">
-                ×
-              </button>
-            )}
-          </form>
+      <div className="relative h-52 md:h-64 overflow-hidden">
+        <img src={banner.src} alt={banner.title} className="w-full h-full object-cover object-top" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 to-primary-700/40 flex items-center">
+          <div className="max-w-7xl mx-auto px-6 text-white">
+            <p className="text-primary-200 text-xs tracking-[0.35em] uppercase mb-2">{banner.tagline}</p>
+            <h1 className="font-serif text-4xl md:text-5xl font-bold mb-1">{banner.title}</h1>
+            <p className="text-gray-200 font-light text-sm">{banner.subtitle}</p>
+          </div>
         </div>
       </div>
 
-      {/* Mobile filter bar */}
+      {/* Mobile filter bar — sticky below header */}
       <div className="lg:hidden sticky top-16 z-30 bg-white border-b border-gray-100 shadow-sm px-4 py-2.5 flex items-center justify-between">
         <button
           onClick={() => setDrawerOpen(true)}
@@ -205,13 +177,18 @@ export default function ProductListing() {
           </svg>
           Filters
           {activeFilterCount > 0 && (
-            <span className="bg-primary-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">{activeFilterCount}</span>
+            <span className="bg-primary-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+              {activeFilterCount}
+            </span>
           )}
         </button>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-400">{loading ? '…' : `${totalProducts} items`}</span>
-          <select value={sort} onChange={(e) => setFilter('sort', e.target.value)}
-            className="border border-gray-200 rounded-xl text-xs py-1.5 px-2 focus:outline-none">
+          <select
+            value={sort}
+            onChange={(e) => setFilter('sort', e.target.value)}
+            className="border border-gray-200 rounded-xl text-xs py-1.5 px-2 focus:outline-none focus:border-primary-400"
+          >
             <option value="newest">Newest</option>
             <option value="price-asc">Price ↑</option>
             <option value="price-desc">Price ↓</option>
@@ -224,8 +201,8 @@ export default function ProductListing() {
 
           {/* Sidebar */}
           <FilterSidebar
-            genders={genders}
             available={available}
+            fixedMainCat={fixedMainCat}
             filters={filters}
             onChange={setFilter}
             onClear={clearAll}
@@ -239,17 +216,24 @@ export default function ProductListing() {
             {/* Desktop toolbar */}
             <div className="hidden lg:flex items-center justify-between mb-6">
               <p className="text-sm text-gray-500">
-                {loading ? 'Loading…' : (
+                {loading ? (
+                  'Loading…'
+                ) : (
                   <>
                     <span className="font-semibold text-gray-800">{totalProducts}</span> products found
                     {activeFilterCount > 0 && (
-                      <button onClick={clearAll} className="ml-3 text-xs text-primary-600 hover:underline">Clear all ×</button>
+                      <button onClick={clearAll} className="ml-3 text-xs text-primary-600 hover:underline">
+                        Clear all filters ×
+                      </button>
                     )}
                   </>
                 )}
               </p>
-              <select value={sort} onChange={(e) => setFilter('sort', e.target.value)}
-                className="border border-gray-200 rounded-xl text-sm py-2 px-3 focus:outline-none focus:border-primary-400 cursor-pointer">
+              <select
+                value={sort}
+                onChange={(e) => setFilter('sort', e.target.value)}
+                className="border border-gray-200 rounded-xl text-sm py-2 px-3 focus:outline-none focus:border-primary-400 cursor-pointer"
+              >
                 <option value="newest">Newest First</option>
                 <option value="price-asc">Price: Low to High</option>
                 <option value="price-desc">Price: High to Low</option>
@@ -259,22 +243,27 @@ export default function ProductListing() {
             {/* Active filter chips */}
             {activeFilterCount > 0 && (
               <div className="flex flex-wrap gap-2 mb-5">
-                {gender && <Chip label={gender} onRemove={() => setFilter('gender', '')} />}
-                {mainCat && <Chip label={mainCat} onRemove={() => setFilter('mainCat', '')} />}
-                {subCategories.map((sc) => (
-                  <Chip key={sc} label={sc} onRemove={() => setFilter('subCategories', subCategories.filter((x) => x !== sc))} />
+                {!fixedMainCat && mainCat && (
+                  <Chip label={mainCat} onRemove={() => setFilter('mainCat', '')} />
+                )}
+                {subCats.map((sc) => (
+                  <Chip key={sc} label={sc} onRemove={() => setFilter('subCategories', subCats.filter((x) => x !== sc))} />
                 ))}
                 {childCats.map((cc) => (
                   <Chip key={cc} label={cc} onRemove={() => setFilter('childCategories', childCats.filter((x) => x !== cc))} />
                 ))}
-                {sizes.map((sz) => <Chip key={sz} label={`Size: ${sz}`} onRemove={() => setFilter('sizes', sizes.filter((x) => x !== sz))} />)}
-                {colors.map((col) => <Chip key={col} label={col} onRemove={() => setFilter('colors', colors.filter((x) => x !== col))} />)}
+                {sizes.map((sz) => (
+                  <Chip key={sz} label={`Size: ${sz}`} onRemove={() => setFilter('sizes', sizes.filter((x) => x !== sz))} />
+                ))}
+                {colors.map((col) => (
+                  <Chip key={col} label={col} onRemove={() => setFilter('colors', colors.filter((x) => x !== col))} />
+                ))}
                 {minPrice && <Chip label={`Min ₹${minPrice}`} onRemove={() => setFilter('minPrice', '')} />}
                 {maxPrice && <Chip label={`Max ₹${maxPrice}`} onRemove={() => setFilter('maxPrice', '')} />}
               </div>
             )}
 
-            {/* Grid */}
+            {/* Product grid */}
             {loading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
@@ -288,10 +277,12 @@ export default function ProductListing() {
               </div>
             ) : products.length === 0 ? (
               <div className="py-24 text-center bg-white rounded-2xl shadow-card">
-                <div className="text-6xl mb-4">🔍</div>
+                <div className="text-6xl mb-4">👗</div>
                 <h3 className="font-serif text-2xl text-gray-700 mb-2">No products found</h3>
-                <p className="text-gray-400 mb-6 text-sm">Try removing some filters or searching with different terms.</p>
-                <button onClick={clearAll} className="btn-primary text-sm py-2.5 px-6">Browse All Products</button>
+                <p className="text-gray-400 mb-6 text-sm">Try removing some filters to see more results.</p>
+                <button onClick={clearAll} className="btn-primary text-sm py-2.5 px-6">
+                  Clear all filters
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -302,18 +293,31 @@ export default function ProductListing() {
             {/* Pagination */}
             {!loading && totalPages > 1 && (
               <div className="flex items-center justify-center gap-2 mt-10 flex-wrap">
-                <button onClick={() => goToPage(page - 1)} disabled={page === 1}
-                  className="px-4 py-2 rounded-full text-sm font-medium border border-gray-200 bg-white text-gray-600 hover:bg-primary-50 hover:text-primary-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                <button
+                  onClick={() => goToPage(page - 1)}
+                  disabled={page === 1}
+                  className="px-4 py-2 rounded-full text-sm font-medium border border-gray-200 bg-white text-gray-600 hover:bg-primary-50 hover:text-primary-700 hover:border-primary-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   ← Previous
                 </button>
                 {pageNumbers.map((n) => (
-                  <button key={n} onClick={() => goToPage(n)}
-                    className={`w-9 h-9 rounded-full text-sm font-medium transition-all ${n === page ? 'bg-primary-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-primary-50 border border-gray-200'}`}>
+                  <button
+                    key={n}
+                    onClick={() => goToPage(n)}
+                    className={`w-9 h-9 rounded-full text-sm font-medium transition-all ${
+                      n === page
+                        ? 'bg-primary-600 text-white shadow-md'
+                        : 'bg-white text-gray-600 hover:bg-primary-50 hover:text-primary-700 border border-gray-200'
+                    }`}
+                  >
                     {n}
                   </button>
                 ))}
-                <button onClick={() => goToPage(page + 1)} disabled={page === totalPages}
-                  className="px-4 py-2 rounded-full text-sm font-medium border border-gray-200 bg-white text-gray-600 hover:bg-primary-50 hover:text-primary-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                <button
+                  onClick={() => goToPage(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-4 py-2 rounded-full text-sm font-medium border border-gray-200 bg-white text-gray-600 hover:bg-primary-50 hover:text-primary-700 hover:border-primary-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
                   Next →
                 </button>
               </div>

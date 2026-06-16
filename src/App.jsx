@@ -7,6 +7,8 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Men from './pages/Men';
 import Women from './pages/Women';
+import Korean from './pages/Korean';
+import Ethnic from './pages/Ethnic';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import ProductListing from './pages/ProductListing';
@@ -79,6 +81,8 @@ export default function App() {
               <Route path="/" element={<UserLayout><Home /></UserLayout>} />
               <Route path="/men" element={<UserLayout><Men /></UserLayout>} />
               <Route path="/women" element={<UserLayout><Women /></UserLayout>} />
+              <Route path="/korean" element={<UserLayout><Korean /></UserLayout>} />
+              <Route path="/ethnic" element={<UserLayout><Ethnic /></UserLayout>} />
               <Route path="/about" element={<UserLayout><About /></UserLayout>} />
               <Route path="/contact" element={<UserLayout><Contact /></UserLayout>} />
               <Route path="/products" element={<UserLayout><ProductListing /></UserLayout>} />

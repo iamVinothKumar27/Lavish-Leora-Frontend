@@ -9,14 +9,27 @@ const HERO_IMG = 'https://images.unsplash.com/photo-1483985988355-763728e1935b?a
 const KOREAN_IMG_1 = 'https://images.unsplash.com/photo-1617922001439-4a2e6562f328?auto=format&fit=crop&w=800&q=80';
 const KOREAN_IMG_2 = 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80';
 
-const COLLECTION_KOREAN = 'https://images.unsplash.com/photo-1617922001439-4a2e6562f328?auto=format&fit=crop&w=800&q=80';
-const COLLECTION_ETHNIC = 'https://images.unsplash.com/photo-1583744946564-b52ac1c389c8?auto=format&fit=crop&w=800&q=80';
+// Image map for known category names — fallback for unknown ones
+const CAT_IMAGES = {
+  Korean:       'https://images.unsplash.com/photo-1617922001439-4a2e6562f328?auto=format&fit=crop&w=800&q=80',
+  Ethnic:       'https://images.unsplash.com/photo-1583744946564-b52ac1c389c8?auto=format&fit=crop&w=800&q=80',
+  'Inner Wears':'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80',
+  Casual:       'https://images.unsplash.com/photo-1552374196-1ab2a1c389c8?auto=format&fit=crop&w=800&q=80',
+  Formal:       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80',
+  Western:      'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=800&q=80',
+};
+const FALLBACK_CAT_IMG = 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80';
 
-const MEN_IMAGES = [
-  'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1552374196-1ab2a1c389c8?auto=format&fit=crop&w=600&q=80',
-];
+// Dedicated page routes for known categories; others fall back to filtered listing
+const CAT_ROUTES = {
+  Korean: '/korean',
+  Ethnic: '/ethnic',
+};
+function getCatLink(gender, name) {
+  if (CAT_ROUTES[name]) return CAT_ROUTES[name];
+  if (gender === 'Women') return `/women?mainCat=${encodeURIComponent(name)}`;
+  return `/products?category=${encodeURIComponent(gender)}&subcategory=${encodeURIComponent(name)}`;
+}
 
 const MARQUEE_ITEMS = [
   '🆕 New products launched every Thursday',
@@ -36,31 +49,59 @@ const WHY_ITEMS = [
   { icon: '◯', title: 'WhatsApp Orders', desc: 'Order instantly via WhatsApp — simple, fast, and personal.' },
 ];
 
-const MEN_CARD_LABELS = ['Casual', 'Formal', 'Street'];
+function CategoryCard({ gender, cat }) {
+  const img = CAT_IMAGES[cat.name] || FALLBACK_CAT_IMG;
+  const subText = (cat.children || []).map((c) => c.name).join(' · ');
+  return (
+    <Link
+      to={getCatLink(gender, cat.name)}
+      className="group relative overflow-hidden rounded-2xl aspect-[3/4] block shadow-card hover:shadow-hover transition-all duration-300"
+    >
+      <img
+        src={img}
+        alt={cat.name}
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        loading="lazy"
+        onError={(e) => { e.target.src = FALLBACK_CAT_IMG; }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
+      <div className="absolute bottom-4 left-4 right-4 text-white">
+        <p className="font-serif text-xl font-bold leading-tight">{cat.name}</p>
+        {subText && <p className="text-xs text-gray-300 mt-0.5 line-clamp-1">{subText}</p>}
+        <p className="text-xs text-primary-300 mt-1.5 font-medium">Shop Now →</p>
+      </div>
+    </Link>
+  );
+}
 
 export default function Home() {
   const [newArrivals, setNewArrivals] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingArrivals, setLoadingArrivals] = useState(true);
+  const [categories, setCategories] = useState([]);
   const activeCategories = useActiveCategories();
 
-  const hasMen = activeCategories?.some((c) => c.toLowerCase() === 'men');
-  const hasWomen = activeCategories === null || activeCategories?.some((c) => c.toLowerCase() === 'women');
+  const hasMen    = activeCategories?.some((c) => c.toLowerCase() === 'men');
+  const hasWomen  = activeCategories === null || activeCategories?.some((c) => c.toLowerCase() === 'women');
+
+  const womenCats = categories.filter((c) => c.gender === 'Women');
+  const menCats   = categories.filter((c) => c.gender === 'Men');
 
   useEffect(() => {
     api.get('/api/products?newArrival=true&limit=4')
       .then((res) => setNewArrivals(res.data.products || []))
       .catch(() => setNewArrivals([]))
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingArrivals(false));
+
+    api.get('/api/categories')
+      .then((res) => setCategories(res.data || []))
+      .catch(() => {});
   }, []);
 
   return (
     <div>
       {/* ── Hero ── */}
       <section className="relative h-screen min-h-[600px] flex items-center overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${HERO_IMG})` }}
-        />
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${HERO_IMG})` }} />
         <div className="absolute inset-0 bg-gradient-to-r from-gray-900/85 via-gray-900/50 to-transparent" />
         <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
           <div className="max-w-xl animate-fade-up">
@@ -77,9 +118,7 @@ export default function Home() {
               Discover premium Korean-style dresses and women's fashion collections crafted for those who dare to be elegant.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Link to="/women" className="btn-primary text-base px-8 py-3.5">
-                Shop Women →
-              </Link>
+              <Link to="/women" className="btn-primary text-base px-8 py-3.5">Shop Women →</Link>
               {hasMen && (
                 <Link to="/men" className="btn-outline border-white text-white hover:bg-white hover:text-gray-900 text-base px-8 py-3.5">
                   Shop Men
@@ -94,7 +133,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Moving Marquee Banner ── */}
+      {/* ── Marquee ── */}
       <section className="bg-primary-900 text-white py-3 overflow-hidden">
         <div className="marquee-track flex gap-0 whitespace-nowrap">
           {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
@@ -113,10 +152,10 @@ export default function Home() {
           <h2 className="section-title">New Arrivals</h2>
           <p className="section-subtitle">Fresh styles added every week — be the first to wear the latest looks</p>
         </div>
-        {loading ? (
+        {loadingArrivals ? (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="rounded-2xl overflow-hidden">
+              <div key={i}>
                 <div className="shimmer aspect-[3/4] w-full rounded-2xl" />
                 <div className="p-4 space-y-2">
                   <div className="shimmer h-3 w-20 rounded" />
@@ -141,24 +180,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Korean Style Section ── */}
+      {/* ── Korean Style Promo ── */}
       <section className="bg-gradient-to-br from-primary-900 via-primary-800 to-gray-900 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative">
               <div className="grid grid-cols-2 gap-4">
-                <img
-                  src={KOREAN_IMG_1}
-                  alt="Korean style dress"
-                  className="rounded-2xl w-full h-64 object-cover shadow-hover"
-                  onError={(e) => { e.target.src = KOREAN_IMG_2; }}
-                />
-                <img
-                  src={KOREAN_IMG_2}
-                  alt="Korean fashion"
-                  className="rounded-2xl w-full h-64 object-cover shadow-hover mt-8"
-                  onError={(e) => { e.target.src = KOREAN_IMG_1; }}
-                />
+                <img src={KOREAN_IMG_1} alt="Korean style dress" className="rounded-2xl w-full h-64 object-cover shadow-hover" onError={(e) => { e.target.src = KOREAN_IMG_2; }} />
+                <img src={KOREAN_IMG_2} alt="Korean fashion" className="rounded-2xl w-full h-64 object-cover shadow-hover mt-8" onError={(e) => { e.target.src = KOREAN_IMG_1; }} />
               </div>
               <div className="absolute -bottom-4 -left-4 bg-gold text-white px-5 py-3 rounded-2xl shadow-lg">
                 <p className="font-serif text-lg font-bold">Korean Style</p>
@@ -166,12 +195,9 @@ export default function Home() {
               </div>
             </div>
             <div className="text-white">
-              <p className="text-primary-300 text-sm font-medium tracking-[0.25em] uppercase mb-3">
-                Signature Collection
-              </p>
+              <p className="text-primary-300 text-sm font-medium tracking-[0.25em] uppercase mb-3">Signature Collection</p>
               <h2 className="font-serif text-4xl md:text-5xl font-bold mb-6 leading-tight">
-                Korean Style<br />
-                <span className="text-primary-300">Redefined</span>
+                Korean Style<br /><span className="text-primary-300">Redefined</span>
               </h2>
               <p className="text-gray-300 font-light leading-relaxed mb-6">
                 We bring you authentic Korean fashion straight from Seoul's trending streets. Each piece combines modern Korean aesthetics with premium comfort — flowing silhouettes, delicate details, and effortless elegance.
@@ -183,62 +209,40 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <Link to="/products?category=Women&subcategory=Korean" className="btn-gold">
-                Explore Korean Dresses
-              </Link>
+              <Link to="/korean" className="btn-gold">Explore Korean Dresses</Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Shop by Category — Korean Dresses + Ethnic Wear ── */}
+      {/* ── Women's Collections (dynamic from backend) ── */}
       {hasWomen && (
         <section className="py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-primary-500 text-sm font-medium tracking-[0.25em] uppercase mb-1">Shop by Category</p>
-            <h2 className="section-title mb-1">Women's Collections</h2>
-            <p className="text-gray-400 text-sm">Curated styles for every occasion</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            <Link
-              to="/products?category=Women&subcategory=Korean"
-              className="group relative overflow-hidden rounded-2xl aspect-[3/4] block shadow-card card-hover"
-            >
-              <img
-                src={COLLECTION_KOREAN}
-                alt="Korean Dresses"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
-              <div className="absolute bottom-4 left-4 text-white">
-                <p className="font-serif text-xl font-bold">Korean Dresses</p>
-                <p className="text-xs text-gray-300 mt-0.5">Coords · Pants · Bamboo</p>
-                <p className="text-xs text-primary-300 mt-1 font-medium">Shop Now →</p>
-              </div>
-            </Link>
-            <Link
-              to="/products?category=Women&subcategory=Ethnic"
-              className="group relative overflow-hidden rounded-2xl aspect-[3/4] block shadow-card card-hover"
-            >
-              <img
-                src={COLLECTION_ETHNIC}
-                alt="Ethnic Wear"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
-              <div className="absolute bottom-4 left-4 text-white">
-                <p className="font-serif text-xl font-bold">Ethnic Wear</p>
-                <p className="text-xs text-gray-300 mt-0.5">Single · 2 PC · 3 PC Kurti</p>
-                <p className="text-xs text-primary-300 mt-1 font-medium">Shop Now →</p>
-              </div>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
+            <div>
+              <p className="text-primary-500 text-sm font-medium tracking-[0.25em] uppercase mb-1">For Her</p>
+              <h2 className="section-title mb-1">Women's Collections</h2>
+              <p className="text-gray-400 text-sm">Curated styles for every occasion</p>
+            </div>
+            <Link to="/women" className="btn-outline text-sm py-2.5 px-6 self-start sm:self-auto">
+              View All Women →
             </Link>
           </div>
+          {womenCats.length > 0 ? (
+            <div className={`grid gap-6 ${womenCats.length === 1 ? 'grid-cols-1 max-w-xs' : womenCats.length === 2 ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+              {womenCats.map((cat) => (
+                <CategoryCard key={cat._id} gender="Women" cat={cat} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-400 text-sm">
+              Add categories in the Admin Panel to show them here.
+            </div>
+          )}
         </section>
       )}
 
-      {/* ── Men's Collection — only when men products exist ── */}
+      {/* ── Men's Collection (dynamic from backend) ── */}
       {hasMen && (
         <section className="py-8 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
@@ -251,28 +255,17 @@ export default function Home() {
               View All Men →
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            {MEN_IMAGES.map((img, i) => (
-              <Link
-                key={i}
-                to="/men"
-                className="group relative overflow-hidden rounded-2xl aspect-[3/4] block shadow-card card-hover"
-              >
-                <img
-                  src={img}
-                  alt="Men's fashion"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  onError={(e) => { e.target.src = MEN_IMAGES[0]; }}
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 text-white">
-                  <p className="font-serif text-lg font-semibold">{MEN_CARD_LABELS[i]}</p>
-                  <p className="text-xs text-gray-300">Shop Now →</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {menCats.length > 0 ? (
+            <div className={`grid gap-6 ${menCats.length === 1 ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl' : menCats.length === 2 ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+              {menCats.map((cat) => (
+                <CategoryCard key={cat._id} gender="Men" cat={cat} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-400 text-sm">
+              Add men's categories in the Admin Panel to show them here.
+            </div>
+          )}
         </section>
       )}
 
@@ -286,10 +279,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {WHY_ITEMS.map(({ icon, title, desc }) => (
-              <div
-                key={title}
-                className="bg-white p-7 rounded-2xl shadow-card text-center group hover:shadow-hover transition-all duration-300 hover:-translate-y-1"
-              >
+              <div key={title} className="bg-white p-7 rounded-2xl shadow-card text-center group hover:shadow-hover transition-all duration-300 hover:-translate-y-1">
                 <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-5 group-hover:bg-primary-100 transition-colors">
                   <span className="text-primary-600 text-2xl">{icon}</span>
                 </div>
@@ -304,9 +294,7 @@ export default function Home() {
       {/* ── CTA Banner ── */}
       <section className="py-20 px-4 sm:px-6 bg-gradient-to-r from-primary-700 to-primary-900 text-white text-center">
         <div className="max-w-2xl mx-auto">
-          <h2 className="font-serif text-4xl md:text-5xl font-bold mb-4">
-            Ready to Elevate Your Style?
-          </h2>
+          <h2 className="font-serif text-4xl md:text-5xl font-bold mb-4">Ready to Elevate Your Style?</h2>
           <p className="text-primary-200 text-lg font-light mb-8">
             Visit our store in Tirupur or browse our collection online. Premium Korean fashion awaits.
           </p>
