@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { resolveImageUrl } from '../utils/imageUrl';
 
 const WA_NUMBER = '916369931994';
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=70';
@@ -209,7 +210,7 @@ export default function Cart() {
                       className="flex-shrink-0 block w-32 sm:w-36"
                     >
                       <img
-                        src={item.image || FALLBACK_IMG}
+                        src={resolveImageUrl(item.image) || FALLBACK_IMG}
                         alt={item.name}
                         className="w-full h-40 sm:h-44 object-cover"
                         onError={(e) => { e.target.src = FALLBACK_IMG; }}
@@ -323,7 +324,7 @@ export default function Cart() {
                 {items.map((item) => (
                   <div key={`${item.product}-${item.size}`} className="flex gap-3 items-start">
                     <img
-                      src={item.image || FALLBACK_IMG}
+                      src={resolveImageUrl(item.image) || FALLBACK_IMG}
                       alt={item.name}
                       className="w-10 h-12 object-cover rounded-lg flex-shrink-0"
                       onError={(e) => { e.target.src = FALLBACK_IMG; }}
